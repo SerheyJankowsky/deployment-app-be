@@ -48,7 +48,8 @@ jobs:
           # Execute deployment commands on remote server
           sshpass -p "$SERVER_PASSWORD" ssh $SERVER_USER@$SERVER_HOST << 'EOF'
           echo "Deploying to server...."
-          echo "Logging in to Docker Hub..."
+          echo "DOCKER_USERNAME: '$DOCKER_USERNAME'"
+          DOCKER_USERNAME=$(echo $DOCKER_USERNAME | tr -d '[:space:]')
           docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
           echo "Pulling latest image..."
           docker pull $DOCKER_USERNAME/deployer:latest
@@ -59,7 +60,7 @@ jobs:
           echo "Copying environment variables..."
           echo $ENVS > .env
           echo "Running container..."
-          docker run -d --name deployer --env-file .env $DOCKER_USERNAME/deployer:latest --restart unless-stopped --network gateway_network --ip 172.30.0.20
+          docker run -d --name deployer --env-file .env $DOCKER_USERNAME/deployer:latest --network gateway_network --ip 172.30.0.20
           echo "Removing environment variables..."
           rm -rf .env
           EOF
