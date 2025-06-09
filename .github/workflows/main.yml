@@ -44,7 +44,6 @@ jobs:
             echo "Removing existing container..."
             docker rm deployer || true
             echo "Copying environment variables..."
-            echo "ENVS: ${{ secrets.ENVS }}"
-            cp ${{ secrets.ENVS }} .env
+            echo ${{ secrets.ENVS }} > .env
             docker run -d --name deployer --env-file .env ${{ secrets.DOCKER_USERNAME }}/deployer:latest
             rm -rf .env
