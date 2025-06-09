@@ -41,9 +41,9 @@ jobs:
             echo "Pulling latest image..."
             docker pull $DOCKER_USERNAME/deployer:latest
             echo "Stopping existing container..."
-            docker stop deployer
+            docker stop deployer || true
             echo "Removing existing container..."
-            docker rm deployer
+            docker rm deployer || true
             echo "Copying environment variables..."
             cp $ENVS .env
             docker run -d --name deployer --env-file .env $DOCKER_USERNAME/deployer:latest
