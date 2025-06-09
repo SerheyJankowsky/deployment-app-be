@@ -33,7 +33,7 @@ jobs:
           ssh_user: ${{ secrets.SSH_USER }}
           # ssh-port: ${{ secrets.SSH_PORT }}
           ssh_password: ${{ secrets.SSH_PASSWORD }}
-          env-vars: "SSH_HOST,SSH_USER,SSH_PASSWORD,DOCKER_USERNAME,DOCKER_PASSWORD"
+          env-vars: "SSH_HOST,SSH_USER,SSH_PASSWORD,DOCKER_USERNAME,DOCKER_PASSWORD,ENVS"
           script: |
             echo "Deploying to server...."
             echo "Logging in to Docker Hub..."
@@ -47,8 +47,5 @@ jobs:
             echo "Copying environment variables..."
             echo "ENVS: $ENVS"
             cp $ENVS .env
-            echo "Running container..."
             docker run -d --name deployer --env-file .env $DOCKER_USERNAME/deployer:latest
-            echo "Removing environment variables..."
             rm -rf .env
-            echo "Deployment complete!"
