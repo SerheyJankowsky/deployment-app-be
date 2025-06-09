@@ -33,19 +33,18 @@ jobs:
           ssh_user: ${{ secrets.SSH_USER }}
           # ssh-port: ${{ secrets.SSH_PORT }}
           ssh_password: ${{ secrets.SSH_PASSWORD }}
-          env-vars: "SSH_HOST,SSH_USER,SSH_PASSWORD,DOCKER_USERNAME,DOCKER_PASSWORD,ENVS"
           script: |
             echo "Deploying to server...."
             echo "Logging in to Docker Hub..."
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
             echo "Pulling latest image..."
-            docker pull $DOCKER_USERNAME/deployer:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/deployer:latest
             echo "Stopping existing container..."
             docker stop deployer || true
             echo "Removing existing container..."
             docker rm deployer || true
             echo "Copying environment variables..."
-            echo "ENVS: $ENVS"
-            cp $ENVS .env
-            docker run -d --name deployer --env-file .env $DOCKER_USERNAME/deployer:latest
+            echo "ENVS: ${{ secrets.ENVS }}"
+            cp ${{ secrets.ENVS }} .env
+            docker run -d --name deployer --env-file .env ${{ secrets.DOCKER_USERNAME }}/deployer:latest
             rm -rf .env
