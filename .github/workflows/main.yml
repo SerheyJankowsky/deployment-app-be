@@ -43,7 +43,11 @@ jobs:
             docker stop deployer || true
             echo "Removing existing container..."
             docker rm deployer || true
-            echo "Copying environment variables..."
-            echo ${{ secrets.ENVS }} > .env
             echo "Running container..."
             docker run -d --name deployer --env-file .env --network gateway_network --ip 172.30.0.20 ${{ secrets.DOCKER_USERNAME }}/deployer:latest
+            echo "check container status..."
+            docker ps -a
+            if [ "$(docker inspect -f '{{.State.Status}}' deployer)" = "exited" ]; then
+              echo "Container exited unexpectedly"
+              exit 1
+            fi
