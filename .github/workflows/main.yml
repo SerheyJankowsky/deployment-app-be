@@ -33,11 +33,12 @@ jobs:
           ssh_user: ${{ secrets.SSH_USER }}
           # ssh-port: ${{ secrets.SSH_PORT }}
           ssh_password: ${{ secrets.SSH_PASSWORD }}
+          env-vars: "SSH_HOST,SSH_USER,SSH_PASSWORD,DOCKER_USERNAME,DOCKER_PASSWORD"
           script: |
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-            docker pull ${{ secrets.DOCKER_USERNAME }}/deployer:latest
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker pull $DOCKER_USERNAME/deployer:latest
             docker stop deployer
             docker rm deployer
-            cp ${{ secrets.ENVS }} .env
-            docker run -d --name deployer --env-file .env ${{ secrets.DOCKER_USERNAME }}/deployer:latest
+            cp $ENVS .env
+            docker run -d --name deployer --env-file .env $DOCKER_USERNAME/deployer:latest
             rm -rf .env
