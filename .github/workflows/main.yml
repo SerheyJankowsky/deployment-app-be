@@ -27,7 +27,7 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v4
-      - uses: SerheyJankowsky/ssh-action@v2
+      - uses: SerheyJankowsky/ssh-action@v3
         with:
           ssh_host: ${{ secrets.SSH_HOST }}
           ssh_user: ${{ secrets.SSH_USER }}
