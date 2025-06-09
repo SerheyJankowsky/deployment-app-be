@@ -35,10 +35,16 @@ jobs:
           ssh_password: ${{ secrets.SSH_PASSWORD }}
           env-vars: "SSH_HOST,SSH_USER,SSH_PASSWORD,DOCKER_USERNAME,DOCKER_PASSWORD"
           script: |
+            echo "Deploying to server...."
+            echo "Logging in to Docker Hub..."
             docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            echo "Pulling latest image..."
             docker pull $DOCKER_USERNAME/deployer:latest
+            echo "Stopping existing container..."
             docker stop deployer
+            echo "Removing existing container..."
             docker rm deployer
+            echo "Copying environment variables..."
             cp $ENVS .env
             docker run -d --name deployer --env-file .env $DOCKER_USERNAME/deployer:latest
             rm -rf .env
