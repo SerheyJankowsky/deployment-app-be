@@ -22,3 +22,22 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/deployer:latest
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: SerheyJankowsky/ssh-action@v1
+        with:
+          ssh_host: ${{ secrets.SSH_HOST }}
+          ssh_user: ${{ secrets.SSH_USER }}
+          # ssh-port: ${{ secrets.SSH_PORT }}
+          ssh_password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/deployer:latest
+            docker stop deployer
+            docker rm deployer
+            cp ${{ secrets.ENVS }} .env
+            docker run -d --name deployer --env-file .env ${{ secrets.DOCKER_USERNAME }}/deployer:latest
+            rm -rf .env
