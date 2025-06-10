@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"time"
 
 	"deployer.com/libs"
 	"deployer.com/modules/auth/dto"
@@ -59,7 +60,7 @@ func (s *AuthService) Login(dto dto.LoginDto) (*LoginResponse, error) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User:         &user,
-		Exp:          libs.ExpiresAt.Unix(),
+		Exp:          time.Now().Add(15 * time.Minute).Unix(),
 	}, nil
 }
 
@@ -91,7 +92,7 @@ func (s *AuthService) Register(dto dto.RegisterDto) (*LoginResponse, error) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User:         &user,
-		Exp:          libs.ExpiresAt.Unix(),
+		Exp:          time.Now().Add(15 * time.Minute).Unix(),
 	}, nil
 }
 
@@ -117,7 +118,7 @@ func (s *AuthService) RefreshToken(rfToken string) (*RefreshTokenResponse, error
 	}
 	return &RefreshTokenResponse{
 		AccessToken: accessToken,
-		Exp:         libs.ExpiresAt.Unix(),
+		Exp:         time.Now().Add(15 * time.Minute).Unix(),
 	}, nil
 }
 

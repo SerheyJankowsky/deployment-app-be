@@ -8,11 +8,8 @@ import (
 )
 
 var (
-	accessSecret        = []byte(os.Getenv("ACCESS_SECRET"))  // Use env in production!
-	refreshSecret       = []byte(os.Getenv("REFRESH_SECRET")) // Use env in production!
-	ExpiresAt           = time.Now().Add(15 * time.Minute)
-	RefreshExpiresAt    = time.Now().Add(7 * 24 * time.Hour)
-	RememberMeExpiresAt = time.Now().Add(30 * 24 * time.Hour)
+	accessSecret  = []byte(os.Getenv("ACCESS_SECRET"))  // Use env in production!
+	refreshSecret = []byte(os.Getenv("REFRESH_SECRET")) // Use env in production!
 )
 
 type UserClaims struct {
@@ -26,7 +23,7 @@ type UserClaims struct {
 
 func GenerateAccessToken(user UserClaims) (string, error) {
 	user.RegisteredClaims = jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(ExpiresAt),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, user)
 	return token.SignedString(accessSecret)
@@ -34,7 +31,7 @@ func GenerateAccessToken(user UserClaims) (string, error) {
 
 func GenerateRefreshToken(user UserClaims) (string, error) {
 	user.RegisteredClaims = jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(RefreshExpiresAt),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, user)
 	return token.SignedString(refreshSecret)
@@ -42,7 +39,7 @@ func GenerateRefreshToken(user UserClaims) (string, error) {
 
 func GenerateRefreshTokenRememberMe(user UserClaims) (string, error) {
 	user.RegisteredClaims = jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(RememberMeExpiresAt),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(30 * 24 * time.Hour)),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, user)
 	return token.SignedString(refreshSecret)
