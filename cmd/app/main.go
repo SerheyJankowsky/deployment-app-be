@@ -21,6 +21,9 @@ func NewFiber() *fiber.App {
 
 func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	api := app.Group("/api/v1")
+	api.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendString("OK")
+	})
 	{
 		group := api.Group("/auth")
 		routes := auth.NewAuthController(auth.NewAuthService(users.NewUsersService(db)))
