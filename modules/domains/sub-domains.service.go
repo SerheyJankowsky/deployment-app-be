@@ -1,6 +1,8 @@
 package domains
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	"deployer.com/libs"
@@ -16,8 +18,6 @@ type SubDomainsService struct {
 type SubDomainResponse struct {
 	ID        uint      `json:"id"`
 	Name      string    `json:"name"`
-	SSLCert   string    `json:"ssl_cert"`
-	SSLKey    string    `json:"ssl_key"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -58,7 +58,16 @@ func (s *SubDomainsService) GetSubDomain(id, userId uint, iv string) (SubDomainR
 }
 
 func (s *SubDomainsService) CreateSubDomain(userId uint, dto dto.CreateSubDomainDto, iv string) (SubDomainResponse, error) {
-
+	domain := Domain{}
+	if err := s.db.Where("id = ? AND user_id = ?", dto.DomainID, userId).First(&domain).Error; err != nil {
+		return SubDomainResponse{}, err
+	}
+	if domain.UserID != userId {
+		return SubDomainResponse{}, errors.New("domain not found")
+	}
+	if err := s.validateSubDomainName(domain.Name, dto.Name); err != nil {
+		return SubDomainResponse{}, err
+	}
 	subDomain := SubDomain{
 		Name:     dto.Name,
 		DomainID: dto.DomainID,
@@ -97,6 +106,18 @@ func (s *SubDomainsService) UpdateSubDomain(id, userId uint, updates map[string]
 func (s *SubDomainsService) DeleteSubDomain(id, userId uint) error {
 	if err := s.db.Where("id = ? AND user_id = ?", id, userId).Delete(&SubDomain{}).Error; err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *SubDomainsService) validateSubDomainName(domainName, subDomainName string) error {
+	splittedDomainName := strings.Split(domainName, ".")
+	if len(splittedDomainName) < 2 {
+		return errors.New("invalid domain name")
+	}
+	subDomainName = strings.TrimPrefix(subDomainName, splittedDomainName[0]+".")
+	if subDomainName == "" {
+		return errors.New("invalid sub domain name")
 	}
 	return nil
 }
