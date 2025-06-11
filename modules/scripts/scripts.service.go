@@ -43,7 +43,7 @@ func (s *ScriptsService) GetScripts(userId uint, iv string) ([]ScriptResponse, e
 			Script:    decoded,
 			CreatedAt: script.CreatedAt,
 			UpdatedAt: script.UpdatedAt,
-			LastRunAt: script.LastRunAt,
+			LastRunAt: *script.LastRunAt,
 		}
 	}
 	return result, nil
@@ -64,7 +64,7 @@ func (s *ScriptsService) GetScript(id, userId uint, iv string) (ScriptResponse, 
 		Script:    decoded,
 		CreatedAt: script.CreatedAt,
 		UpdatedAt: script.UpdatedAt,
-		LastRunAt: script.LastRunAt,
+		LastRunAt: *script.LastRunAt,
 	}, nil
 }
 
@@ -87,7 +87,7 @@ func (s *ScriptsService) CreateScript(userId uint, dto dto.CreateScriptDto, iv s
 		Script:    dto.Script,
 		CreatedAt: script.CreatedAt,
 		UpdatedAt: script.UpdatedAt,
-		LastRunAt: script.LastRunAt,
+		LastRunAt: *script.LastRunAt,
 	}, nil
 }
 
@@ -117,7 +117,7 @@ func (s *ScriptsService) UpdateScript(id, userId uint, updates map[string]interf
 		Script:    decoded,
 		CreatedAt: script.CreatedAt,
 		UpdatedAt: script.UpdatedAt,
-		LastRunAt: script.LastRunAt,
+		LastRunAt: *script.LastRunAt,
 	}, nil
 }
 

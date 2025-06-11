@@ -17,5 +17,5 @@ type Script struct {
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-	LastRunAt time.Time      `gorm:"index" json:"last_run_at"`
+	LastRunAt *time.Time     `gorm:"index;default:null" json:"last_run_at"`
 }
