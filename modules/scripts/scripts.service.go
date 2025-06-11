@@ -14,12 +14,12 @@ type ScriptsService struct {
 }
 
 type ScriptResponse struct {
-	ID        uint      `json:"id"`
-	Name      string    `json:"name"`
-	Script    string    `json:"script"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	LastRunAt time.Time `json:"last_run_at"`
+	ID        uint       `json:"id"`
+	Name      string     `json:"name"`
+	Script    string     `json:"script"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	LastRunAt *time.Time `json:"last_run_at"`
 }
 
 func NewScriptsService(db *gorm.DB) *ScriptsService {
@@ -43,7 +43,7 @@ func (s *ScriptsService) GetScripts(userId uint, iv string) ([]ScriptResponse, e
 			Script:    decoded,
 			CreatedAt: script.CreatedAt,
 			UpdatedAt: script.UpdatedAt,
-			LastRunAt: *script.LastRunAt,
+			LastRunAt: script.LastRunAt,
 		}
 	}
 	return result, nil
@@ -64,7 +64,7 @@ func (s *ScriptsService) GetScript(id, userId uint, iv string) (ScriptResponse, 
 		Script:    decoded,
 		CreatedAt: script.CreatedAt,
 		UpdatedAt: script.UpdatedAt,
-		LastRunAt: *script.LastRunAt,
+		LastRunAt: script.LastRunAt,
 	}, nil
 }
 
@@ -87,7 +87,7 @@ func (s *ScriptsService) CreateScript(userId uint, dto dto.CreateScriptDto, iv s
 		Script:    dto.Script,
 		CreatedAt: script.CreatedAt,
 		UpdatedAt: script.UpdatedAt,
-		LastRunAt: *script.LastRunAt,
+		LastRunAt: script.LastRunAt,
 	}, nil
 }
 
@@ -117,7 +117,7 @@ func (s *ScriptsService) UpdateScript(id, userId uint, updates map[string]interf
 		Script:    decoded,
 		CreatedAt: script.CreatedAt,
 		UpdatedAt: script.UpdatedAt,
-		LastRunAt: *script.LastRunAt,
+		LastRunAt: script.LastRunAt,
 	}, nil
 }
 
