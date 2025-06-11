@@ -7,6 +7,7 @@ import (
 	postgres "deployer.com/cmd/db/db"
 	"deployer.com/modules/auth"
 	"deployer.com/modules/containers"
+	"deployer.com/modules/domains"
 	"deployer.com/modules/scripts"
 	"deployer.com/modules/secrets"
 	"deployer.com/modules/servers"
@@ -54,6 +55,16 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 		group := api.Group("/scripts")
 		routes := scripts.NewScriptsController(&group, scripts.NewScriptsService(db))
 		routes.RegisterRoutes(&group)
+	}
+	{
+		group := api.Group("/domains")
+		routes := domains.NewDomainsController(&group, domains.NewDomainsService(db))
+		routes.RegisterDomainsRoutes(&group)
+	}
+	{
+		group := api.Group("/sub-domains")
+		routes := domains.NewSubDomainsController(&group, domains.NewSubDomainsService(db))
+		routes.RegisterSubDomainsRoutes(&group)
 	}
 }
 
