@@ -75,16 +75,6 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 }
 
 func main() {
-	postgres.DB_MIGRATOR.AutoMigrate(
-		users.User{},
-		secrets.Secret{},
-		servers.Server{},
-		containers.Container{},
-		scripts.Script{},
-		domains.Domain{},
-		domains.SubDomain{},
-		deployments.Deployment{},
-	)
 	app := fx.New(
 		fx.Provide(
 			NewFiber,
@@ -93,9 +83,18 @@ func main() {
 		fx.Invoke(func(lc fx.Lifecycle, app *fiber.App, db *gorm.DB) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
-					// if err := db.AutoMigrate(db); err != nil {
-					// 	log.Fatal("AutoMigrate failed:", err)
-					// }
+					if err := db.AutoMigrate(
+						&users.User{},
+						&secrets.Secret{},
+						&servers.Server{},
+						&containers.Container{},
+						&scripts.Script{},
+						&domains.Domain{},
+						&domains.SubDomain{},
+						&deployments.Deployment{},
+					); err != nil {
+						log.Fatal("AutoMigrate failed:", err)
+					}
 					RegisterRoutes(app, db)
 					go func() {
 						if err := app.Listen(":8080"); err != nil {
