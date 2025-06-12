@@ -135,7 +135,45 @@ func (s *DeploymentsService) safeCreateAssociations(deployment *Deployment, dto 
 	}
 }
 
-// Helper function to safely update associations
+// Helper function to safely create associations from IDs
+func (s *DeploymentsService) safeCreateAssociationsFromIDs(deployment *Deployment, dto dto.CreateDeploymentDto) {
+	// Convert IDs to objects and create associations
+
+	if len(dto.DomainIDs) > 0 && s.tableExists("deployment_domains") {
+		var domains []domains.Domain
+		if err := s.db.Where("id IN ?", dto.DomainIDs).Find(&domains).Error; err == nil {
+			s.db.Model(deployment).Association("Domains").Replace(domains)
+		}
+	}
+
+	if len(dto.SubDomainIDs) > 0 && s.tableExists("deployment_subdomains") {
+		var subdomains []domains.SubDomain
+		if err := s.db.Where("id IN ?", dto.SubDomainIDs).Find(&subdomains).Error; err == nil {
+			s.db.Model(deployment).Association("SubDomains").Replace(subdomains)
+		}
+	}
+
+	if len(dto.ContainerIDs) > 0 && s.tableExists("deployment_containers") {
+		var containers []containers.Container
+		if err := s.db.Where("id IN ?", dto.ContainerIDs).Find(&containers).Error; err == nil {
+			s.db.Model(deployment).Association("Containers").Replace(containers)
+		}
+	}
+
+	if len(dto.ScriptIDs) > 0 && s.tableExists("deployment_scripts") {
+		var scripts []scripts.Script
+		if err := s.db.Where("id IN ?", dto.ScriptIDs).Find(&scripts).Error; err == nil {
+			s.db.Model(deployment).Association("Scripts").Replace(scripts)
+		}
+	}
+
+	if len(dto.SecretIDs) > 0 && s.tableExists("deployment_secrets") {
+		var secrets []secrets.Secret
+		if err := s.db.Where("id IN ?", dto.SecretIDs).Find(&secrets).Error; err == nil {
+			s.db.Model(deployment).Association("Secrets").Replace(secrets)
+		}
+	}
+}
 func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, updates map[string]interface{}) {
 	// Handle many-to-many associations separately (only if tables exist)
 
@@ -167,8 +205,8 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 		delete(updates, "scripts")
 	}
 
-	if sc, ok := updates["secrets"]; ok {
-		if secretList, ok := sc.([]secrets.Secret); ok && s.tableExists("deployment_secrets") {
+	if se, ok := updates["secrets"]; ok {
+		if secretList, ok := se.([]secrets.Secret); ok && s.tableExists("deployment_secrets") {
 			s.db.Model(deployment).Association("Secrets").Replace(secretList)
 		}
 		delete(updates, "secrets")
@@ -362,8 +400,14 @@ func (s *DeploymentsService) CreateDeployment(userId uint, dto dto.CreateDeploym
 		return DeploymentResponse{}, err
 	}
 
-	// Handle many-to-many associations safely (only if tables exist)
-	s.safeCreateAssociations(&deployment, dto)
+	// Handle relationships based on which approach is used
+	if dto.UseIDsOnly() {
+		// Convert IDs to objects and create associations
+		s.safeCreateAssociationsFromIDs(&deployment, dto)
+	} else if dto.UseFullObjects() {
+		// Use full objects directly
+		s.safeCreateAssociations(&deployment, dto)
+	}
 
 	// Try to preload relations safely
 	s.safePreloadRelations(&deployment)
