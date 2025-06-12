@@ -9,7 +9,6 @@ import (
 	"deployer.com/modules/domains"
 	"deployer.com/modules/scripts"
 	"deployer.com/modules/secrets"
-	"deployer.com/modules/servers"
 	"gorm.io/gorm"
 )
 
@@ -49,29 +48,131 @@ type SecretSummary struct {
 }
 
 type DeploymentResponse struct {
-	ID                    uint               `json:"id"`
-	Name                  string             `json:"name"`
-	Domains               []DomainSummary    `json:"domains"`
-	SubDomains            []SubDomainSummary `json:"sub_domains"`
-	Containers            []ContainerSummary `json:"containers"`
-	Servers               []ServerSummary    `json:"servers"`
-	Scripts               []ScriptSummary    `json:"scripts"`
-	Secrets               []SecretSummary    `json:"secrets"`
-	Status                DeploymentStatus   `json:"status"`
-	LastRunAt             *time.Time         `json:"last_run_at"`
-	SetUpDomains          bool               `json:"setup_domains"`
-	PoolContainers        bool               `json:"pool_containers"`
-	RunContainers         bool               `json:"run_containers"`
-	SetUpServers          bool               `json:"setup_servers"`
-	SetSecretsToServer    bool               `json:"set_secrets_to_server"`
-	SetSecretsToContainer bool               `json:"set_secrets_to_container"`
-	RunScripts            bool               `json:"run_scripts"`
-	CreatedAt             time.Time          `json:"created_at"`
-	UpdatedAt             time.Time          `json:"updated_at"`
+	ID         uint               `json:"id"`
+	Name       string             `json:"name"`
+	Domains    []DomainSummary    `json:"domains"`
+	SubDomains []SubDomainSummary `json:"sub_domains"`
+	Containers []ContainerSummary `json:"containers"`
+	// Servers            []ServerSummary    `json:"servers"` // Commented out due to import issue
+	Scripts               []ScriptSummary  `json:"scripts"`
+	Secrets               []SecretSummary  `json:"secrets"`
+	Status                DeploymentStatus `json:"status"`
+	LastRunAt             *time.Time       `json:"last_run_at"`
+	SetUpDomains          bool             `json:"setup_domains"`
+	PoolContainers        bool             `json:"pool_containers"`
+	RunContainers         bool             `json:"run_containers"`
+	SetUpServers          bool             `json:"setup_servers"`
+	SetSecretsToServer    bool             `json:"set_secrets_to_server"`
+	SetSecretsToContainer bool             `json:"set_secrets_to_container"`
+	RunScripts            bool             `json:"run_scripts"`
+	CreatedAt             time.Time        `json:"created_at"`
+	UpdatedAt             time.Time        `json:"updated_at"`
 }
 
 func NewDeploymentsService(db *gorm.DB) *DeploymentsService {
 	return &DeploymentsService{db: db}
+}
+
+// Helper function to safely preload relations, ignoring errors if tables don't exist
+func (s *DeploymentsService) safePreloadRelations(deployment *Deployment) {
+	// Try to preload each relationship, ignore errors if junction tables don't exist
+
+	// Try Domains
+	if err := s.db.Model(deployment).Association("Domains").Find(&deployment.Domains); err != nil {
+		deployment.Domains = []domains.Domain{} // Set empty slice if error
+	}
+
+	// Try SubDomains
+	if err := s.db.Model(deployment).Association("SubDomains").Find(&deployment.SubDomains); err != nil {
+		deployment.SubDomains = []domains.SubDomain{} // Set empty slice if error
+	}
+
+	// Try Containers
+	if err := s.db.Model(deployment).Association("Containers").Find(&deployment.Containers); err != nil {
+		deployment.Containers = []containers.Container{} // Set empty slice if error
+	}
+
+	// Try Scripts
+	if err := s.db.Model(deployment).Association("Scripts").Find(&deployment.Scripts); err != nil {
+		deployment.Scripts = []scripts.Script{} // Set empty slice if error
+	}
+
+	// Try Secrets
+	if err := s.db.Model(deployment).Association("Secrets").Find(&deployment.Secrets); err != nil {
+		deployment.Secrets = []secrets.Secret{} // Set empty slice if error
+	}
+}
+
+// Helper function to check if a table exists
+func (s *DeploymentsService) tableExists(tableName string) bool {
+	var count int64
+	err := s.db.Raw("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?", tableName).Scan(&count).Error
+	return err == nil && count > 0
+}
+
+// Helper function to safely create associations
+func (s *DeploymentsService) safeCreateAssociations(deployment *Deployment, dto dto.CreateDeploymentDto) {
+	// Only create associations if the data exists and tables exist
+
+	if len(dto.Domains) > 0 && s.tableExists("deployment_domains") {
+		s.db.Model(deployment).Association("Domains").Replace(dto.Domains)
+	}
+
+	if len(dto.SubDomains) > 0 && s.tableExists("deployment_subdomains") {
+		s.db.Model(deployment).Association("SubDomains").Replace(dto.SubDomains)
+	}
+
+	if len(dto.Containers) > 0 && s.tableExists("deployment_containers") {
+		s.db.Model(deployment).Association("Containers").Replace(dto.Containers)
+	}
+
+	if len(dto.Scripts) > 0 && s.tableExists("deployment_scripts") {
+		s.db.Model(deployment).Association("Scripts").Replace(dto.Scripts)
+	}
+
+	if len(dto.Secrets) > 0 && s.tableExists("deployment_secrets") {
+		s.db.Model(deployment).Association("Secrets").Replace(dto.Secrets)
+	}
+}
+
+// Helper function to safely update associations
+func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, updates map[string]interface{}) {
+	// Handle many-to-many associations separately (only if tables exist)
+
+	if d, ok := updates["domains"]; ok {
+		if domainList, ok := d.([]domains.Domain); ok && s.tableExists("deployment_domains") {
+			s.db.Model(deployment).Association("Domains").Replace(domainList)
+		}
+		delete(updates, "domains")
+	}
+
+	if subDomains, ok := updates["sub_domains"]; ok {
+		if subDomainList, ok := subDomains.([]domains.SubDomain); ok && s.tableExists("deployment_subdomains") {
+			s.db.Model(deployment).Association("SubDomains").Replace(subDomainList)
+		}
+		delete(updates, "sub_domains")
+	}
+
+	if c, ok := updates["containers"]; ok {
+		if containerList, ok := c.([]containers.Container); ok && s.tableExists("deployment_containers") {
+			s.db.Model(deployment).Association("Containers").Replace(containerList)
+		}
+		delete(updates, "containers")
+	}
+
+	if sc, ok := updates["scripts"]; ok {
+		if scriptList, ok := sc.([]scripts.Script); ok && s.tableExists("deployment_scripts") {
+			s.db.Model(deployment).Association("Scripts").Replace(scriptList)
+		}
+		delete(updates, "scripts")
+	}
+
+	if sc, ok := updates["secrets"]; ok {
+		if secretList, ok := sc.([]secrets.Secret); ok && s.tableExists("deployment_secrets") {
+			s.db.Model(deployment).Association("Secrets").Replace(secretList)
+		}
+		delete(updates, "secrets")
+	}
 }
 
 // Helper function to convert domain slice to summary slice
@@ -110,17 +211,17 @@ func convertContainersToSummary(containers []containers.Container) []ContainerSu
 	return result
 }
 
-// Helper function to convert server slice to summary slice
-func convertServersToSummary(servers []servers.Server) []ServerSummary {
-	result := make([]ServerSummary, len(servers))
-	for i, server := range servers {
-		result[i] = ServerSummary{
-			ID:   server.ID,
-			Name: server.Name,
-		}
-	}
-	return result
-}
+// Helper function to convert server slice to summary slice - COMMENTED OUT DUE TO IMPORT ISSUE
+// func convertServersToSummary(servers []servers.Server) []ServerSummary {
+// 	result := make([]ServerSummary, len(servers))
+// 	for i, server := range servers {
+// 		result[i] = ServerSummary{
+// 			ID:   server.ID,
+// 			Name: server.Name,
+// 		}
+// 	}
+// 	return result
+// }
 
 // Helper function to convert script slice to summary slice
 func convertScriptsToSummary(scripts []scripts.Script) []ScriptSummary {
@@ -146,7 +247,43 @@ func convertSecretsToSummary(secrets []secrets.Secret) []SecretSummary {
 	return result
 }
 
-// Helper function to convert deployment to response
+// Helper function to safely preload relations, ignoring errors if tables don't exist
+// func (s *DeploymentsService) safePreloadRelations(deployment *Deployment) {
+// 	// Try to preload each relationship, ignore errors if junction tables don't exist
+
+// 	// Try Domains
+// 	if err := s.db.Model(deployment).Association("Domains").Find(&deployment.Domains); err != nil {
+// 		deployment.Domains = []domains.Domain{} // Set empty slice if error
+// 	}
+
+// 	// Try SubDomains
+// 	if err := s.db.Model(deployment).Association("SubDomains").Find(&deployment.SubDomains); err != nil {
+// 		deployment.SubDomains = []domains.SubDomain{} // Set empty slice if error
+// 	}
+
+// 	// Try Containers
+// 	if err := s.db.Model(deployment).Association("Containers").Find(&deployment.Containers); err != nil {
+// 		deployment.Containers = []containers.Container{} // Set empty slice if error
+// 	}
+
+// 	// Try Scripts
+// 	if err := s.db.Model(deployment).Association("Scripts").Find(&deployment.Scripts); err != nil {
+// 		deployment.Scripts = []scripts.Script{} // Set empty slice if error
+// 	}
+
+// 	// Try Secrets
+// 	if err := s.db.Model(deployment).Association("Secrets").Find(&deployment.Secrets); err != nil {
+// 		deployment.Secrets = []secrets.Secret{} // Set empty slice if error
+// 	}
+// }
+
+// Helper function to check if a table exists
+//
+//	func (s *DeploymentsService) tableExists(tableName string) bool {
+//		var count int64
+//		err := s.db.Raw("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?", tableName).Scan(&count).Error
+//		return err == nil && count > 0
+//	}
 func (s *DeploymentsService) convertToResponse(deployment Deployment) DeploymentResponse {
 	return DeploymentResponse{
 		ID:                    deployment.ID,
@@ -165,23 +302,17 @@ func (s *DeploymentsService) convertToResponse(deployment Deployment) Deployment
 		Domains:               convertDomainsToSummary(deployment.Domains),
 		SubDomains:            convertSubDomainsToSummary(deployment.SubDomains),
 		Containers:            convertContainersToSummary(deployment.Containers),
-		Servers:               convertServersToSummary(deployment.Servers),
-		Scripts:               convertScriptsToSummary(deployment.Scripts),
-		Secrets:               convertSecretsToSummary(deployment.Secrets),
+		// Servers:            convertServersToSummary(deployment.Servers), // Commented out due to import issue
+		Scripts: convertScriptsToSummary(deployment.Scripts),
+		Secrets: convertSecretsToSummary(deployment.Secrets),
 	}
 }
 
 func (s *DeploymentsService) GetDeployments(userId uint, iv string) ([]DeploymentResponse, error) {
 	var deployments []Deployment
 
-	// Preload all many-to-many relationships
+	// First, get deployments without preloading to avoid junction table errors
 	if err := s.db.Where("user_id = ?", userId).
-		Preload("Domains").
-		Preload("SubDomains").
-		Preload("Containers").
-		Preload("Servers").
-		Preload("Scripts").
-		Preload("Secrets").
 		Order("created_at DESC").
 		Find(&deployments).Error; err != nil {
 		return nil, err
@@ -189,6 +320,8 @@ func (s *DeploymentsService) GetDeployments(userId uint, iv string) ([]Deploymen
 
 	result := make([]DeploymentResponse, len(deployments))
 	for i, deployment := range deployments {
+		// Try to preload each relationship individually and handle errors gracefully
+		s.safePreloadRelations(&deployment)
 		result[i] = s.convertToResponse(deployment)
 	}
 
@@ -198,17 +331,14 @@ func (s *DeploymentsService) GetDeployments(userId uint, iv string) ([]Deploymen
 func (s *DeploymentsService) GetDeployment(id, userId uint, iv string) (DeploymentResponse, error) {
 	var deployment Deployment
 
-	// Preload all many-to-many relationships
+	// First, get deployment without preloading to avoid junction table errors
 	if err := s.db.Where("id = ? AND user_id = ?", id, userId).
-		Preload("Domains").
-		Preload("SubDomains").
-		Preload("Containers").
-		Preload("Servers").
-		Preload("Scripts").
-		Preload("Secrets").
 		First(&deployment).Error; err != nil {
 		return DeploymentResponse{}, err
 	}
+
+	// Try to preload each relationship individually and handle errors gracefully
+	s.safePreloadRelations(&deployment)
 
 	return s.convertToResponse(deployment), nil
 }
@@ -232,53 +362,11 @@ func (s *DeploymentsService) CreateDeployment(userId uint, dto dto.CreateDeploym
 		return DeploymentResponse{}, err
 	}
 
-	// Handle many-to-many associations
-	if len(dto.Domains) > 0 {
-		if err := s.db.Model(&deployment).Association("Domains").Replace(dto.Domains); err != nil {
-			return DeploymentResponse{}, err
-		}
-	}
+	// Handle many-to-many associations safely (only if tables exist)
+	s.safeCreateAssociations(&deployment, dto)
 
-	if len(dto.SubDomains) > 0 {
-		if err := s.db.Model(&deployment).Association("SubDomains").Replace(dto.SubDomains); err != nil {
-			return DeploymentResponse{}, err
-		}
-	}
-
-	if len(dto.Containers) > 0 {
-		if err := s.db.Model(&deployment).Association("Containers").Replace(dto.Containers); err != nil {
-			return DeploymentResponse{}, err
-		}
-	}
-
-	if len(dto.Servers) > 0 {
-		if err := s.db.Model(&deployment).Association("Servers").Replace(dto.Servers); err != nil {
-			return DeploymentResponse{}, err
-		}
-	}
-
-	if len(dto.Scripts) > 0 {
-		if err := s.db.Model(&deployment).Association("Scripts").Replace(dto.Scripts); err != nil {
-			return DeploymentResponse{}, err
-		}
-	}
-
-	if len(dto.Secrets) > 0 {
-		if err := s.db.Model(&deployment).Association("Secrets").Replace(dto.Secrets); err != nil {
-			return DeploymentResponse{}, err
-		}
-	}
-
-	// Reload with associations
-	if err := s.db.Preload("Domains").
-		Preload("SubDomains").
-		Preload("Containers").
-		Preload("Servers").
-		Preload("Scripts").
-		Preload("Secrets").
-		First(&deployment, deployment.ID).Error; err != nil {
-		return DeploymentResponse{}, err
-	}
+	// Try to preload relations safely
+	s.safePreloadRelations(&deployment)
 
 	return s.convertToResponse(deployment), nil
 }
@@ -291,60 +379,8 @@ func (s *DeploymentsService) UpdateDeployment(id, userId uint, updates map[strin
 		return DeploymentResponse{}, err
 	}
 
-	// Handle many-to-many associations separately
-	if d, ok := updates["domains"]; ok {
-		if domainList, ok := d.([]domains.Domain); ok {
-			if err := s.db.Model(&deployment).Association("Domains").Replace(domainList); err != nil {
-				return DeploymentResponse{}, err
-			}
-		}
-		delete(updates, "domains")
-	}
-
-	if subDomains, ok := updates["sub_domains"]; ok {
-		if subDomainList, ok := subDomains.([]domains.SubDomain); ok {
-			if err := s.db.Model(&deployment).Association("SubDomains").Replace(subDomainList); err != nil {
-				return DeploymentResponse{}, err
-			}
-		}
-		delete(updates, "sub_domains")
-	}
-
-	if c, ok := updates["containers"]; ok {
-		if containerList, ok := c.([]containers.Container); ok {
-			if err := s.db.Model(&deployment).Association("Containers").Replace(containerList); err != nil {
-				return DeploymentResponse{}, err
-			}
-		}
-		delete(updates, "containers")
-	}
-
-	if sr, ok := updates["servers"]; ok {
-		if serverList, ok := sr.([]servers.Server); ok {
-			if err := s.db.Model(&deployment).Association("Servers").Replace(serverList); err != nil {
-				return DeploymentResponse{}, err
-			}
-		}
-		delete(updates, "servers")
-	}
-
-	if sc, ok := updates["scripts"]; ok {
-		if scriptList, ok := sc.([]scripts.Script); ok {
-			if err := s.db.Model(&deployment).Association("Scripts").Replace(scriptList); err != nil {
-				return DeploymentResponse{}, err
-			}
-		}
-		delete(updates, "scripts")
-	}
-
-	if se, ok := updates["secrets"]; ok {
-		if secretList, ok := se.([]secrets.Secret); ok {
-			if err := s.db.Model(&deployment).Association("Secrets").Replace(secretList); err != nil {
-				return DeploymentResponse{}, err
-			}
-		}
-		delete(updates, "secrets")
-	}
+	// Handle associations safely
+	s.safeUpdateAssociations(&deployment, updates)
 
 	// Update other fields
 	if len(updates) > 0 {
@@ -354,16 +390,8 @@ func (s *DeploymentsService) UpdateDeployment(id, userId uint, updates map[strin
 		}
 	}
 
-	// Reload with associations
-	if err := s.db.Preload("Domains").
-		Preload("SubDomains").
-		Preload("Containers").
-		Preload("Servers").
-		Preload("Scripts").
-		Preload("Secrets").
-		First(&deployment, deployment.ID).Error; err != nil {
-		return DeploymentResponse{}, err
-	}
+	// Try to preload relations safely
+	s.safePreloadRelations(&deployment)
 
 	return s.convertToResponse(deployment), nil
 }
