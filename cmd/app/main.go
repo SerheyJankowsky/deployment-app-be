@@ -75,6 +75,16 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 }
 
 func main() {
+	postgres.DB_MIGRATOR.AutoMigrate(
+		users.User{},
+		secrets.Secret{},
+		servers.Server{},
+		containers.Container{},
+		scripts.Script{},
+		domains.Domain{},
+		domains.SubDomain{},
+		deployments.Deployment{},
+	)
 	app := fx.New(
 		fx.Provide(
 			NewFiber,
