@@ -110,14 +110,71 @@ func (s *SubDomainsService) DeleteSubDomain(id, userId uint) error {
 	return nil
 }
 
+// validateSubDomainName checks if subDomainName is a valid subdomain of domainName
 func (s *SubDomainsService) validateSubDomainName(domainName, subDomainName string) error {
-	splittedDomainName := strings.Split(domainName, ".")
-	if len(splittedDomainName) < 2 {
+	// Basic validation
+	if domainName == "" || subDomainName == "" {
+		return errors.New("domain name and subdomain name cannot be empty")
+	}
+
+	// Extract root domain (last two parts for most cases)
+	rootDomain := extractRootDomain(domainName)
+	if rootDomain == "" {
 		return errors.New("invalid domain name")
 	}
-	subDomainName = strings.TrimPrefix(subDomainName, splittedDomainName[0]+".")
-	if subDomainName == "" {
-		return errors.New("invalid sub domain name")
+
+	// Check if subdomain ends with the root domain
+	if !strings.HasSuffix(subDomainName, "."+rootDomain) {
+		return errors.New("subdomain does not belong to the same domain")
 	}
+
+	// Ensure subdomain is actually longer (has additional parts)
+	if subDomainName == rootDomain {
+		return errors.New("subdomain cannot be the same as root domain")
+	}
+
+	return nil
+}
+
+// extractRootDomain extracts the root domain from a given domain
+// For example: "api.example.com" -> "example.com"
+func extractRootDomain(domain string) string {
+	parts := strings.Split(domain, ".")
+	if len(parts) < 2 {
+		return ""
+	}
+
+	// For most cases, take the last two parts
+	// This handles: example.com, api.example.com, sub.api.example.com
+	return strings.Join(parts[len(parts)-2:], ".")
+}
+
+// Alternative approach: More flexible validation
+func (s *SubDomainsService) validateSubDomainNameFlexible(domainName, subDomainName string) error {
+	if domainName == "" || subDomainName == "" {
+		return errors.New("domain name and subdomain name cannot be empty")
+	}
+
+	// Normalize domains (remove leading/trailing dots, convert to lowercase)
+	domainName = strings.ToLower(strings.Trim(domainName, "."))
+	subDomainName = strings.ToLower(strings.Trim(subDomainName, "."))
+
+	// The subdomain should end with the domain name
+	expectedSuffix := "." + domainName
+	if !strings.HasSuffix(subDomainName, expectedSuffix) {
+		return errors.New("subdomain does not belong to the specified domain")
+	}
+
+	// Ensure it's actually a subdomain (has additional parts before the domain)
+	prefix := strings.TrimSuffix(subDomainName, expectedSuffix)
+	if prefix == "" {
+		return errors.New("provided subdomain is the same as the domain")
+	}
+
+	// Validate that the prefix doesn't contain invalid characters
+	if strings.Contains(prefix, "..") || strings.HasPrefix(prefix, ".") || strings.HasSuffix(prefix, ".") {
+		return errors.New("invalid subdomain format")
+	}
+
 	return nil
 }
