@@ -6,7 +6,7 @@ import (
 )
 
 type Domain struct {
-	*gorm.Model
+	gorm.Model
 	// ID         uint           `gorm:"primaryKey" json:"id"`
 	Name       string      `gorm:"not null;index" json:"name"`
 	SSLCert    string      `gorm:"not null" json:"ssl_cert"`
@@ -20,7 +20,7 @@ type Domain struct {
 }
 
 type SubDomain struct {
-	*gorm.Model
+	gorm.Model
 	// ID        uint           `gorm:"primaryKey" json:"id"`
 	Name     string     `gorm:"not null;uniqueIndex:idx_domain_subdomain" json:"name"`
 	Domain   Domain     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`

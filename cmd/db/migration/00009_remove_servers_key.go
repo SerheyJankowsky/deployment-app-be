@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 
-	postgres "deployer.com/cmd/db/db"
-	"deployer.com/modules/servers"
 	"github.com/pressly/goose/v3"
 )
 
@@ -14,7 +12,20 @@ func init() {
 }
 
 func upRemoveServersKey(ctx context.Context, tx *sql.Tx) error {
-	return postgres.DB_MIGRATOR.DropColumn(&servers.Server{}, "key")
+	_, err := tx.Exec(`
+		DO $$
+		BEGIN
+			IF EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_name='servers' AND column_name='key'
+			) THEN
+				ALTER TABLE servers DROP COLUMN key;
+			END IF;
+		END
+		$$;
+	`)
+	return err
 }
 
 func downRemoveServersKey(ctx context.Context, tx *sql.Tx) error {

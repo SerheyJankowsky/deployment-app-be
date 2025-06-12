@@ -20,7 +20,7 @@ func NewSubDomainsController(router *fiber.Router, subDomainsService *SubDomains
 
 func (c *SubDomainsController) RegisterSubDomainsRoutes(router *fiber.Router) {
 	(*c.router).Get("/:domainId", guards.JwtGuard, c.GetSubDomains)
-	(*c.router).Get("/:id", guards.JwtGuard, c.GetSubDomain)
+	(*c.router).Get("/one/:id", guards.JwtGuard, c.GetSubDomain)
 	(*c.router).Post("/", guards.JwtGuard, c.CreateSubDomain)
 	(*c.router).Patch("/:id", guards.JwtGuard, c.UpdateSubDomain)
 	(*c.router).Delete("/:id", guards.JwtGuard, c.DeleteSubDomain)
