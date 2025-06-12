@@ -24,7 +24,7 @@ type SubDomain struct {
 	// ID        uint           `gorm:"primaryKey" json:"id"`
 	Name     string     `gorm:"not null;uniqueIndex:idx_domain_subdomain" json:"name"`
 	Domain   Domain     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	DomainID uint       `gorm:"not null;uniqueIndex:idx_domain_subdomain" json:"domain_id"`
+	DomainID uint       `gorm:"not null;uniqueIndex:idx_domain_subdomain;index" json:"domain_id"`
 	User     users.User `gorm:"foreignKey:UserID" json:"-"`
 	UserID   uint       `gorm:"not null" json:"user_id"`
 	// CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
