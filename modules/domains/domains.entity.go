@@ -22,7 +22,7 @@ type Domain struct {
 type SubDomain struct {
 	*gorm.Model
 	// ID        uint           `gorm:"primaryKey" json:"id"`
-	Name     string     `gorm:"not null;index" json:"name"`
+	Name     string     `gorm:"not null;uniqueIndex:idx_domain_subdomain" json:"name"`
 	Domain   Domain     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	DomainID uint       `gorm:"not null;uniqueIndex:idx_domain_subdomain" json:"domain_id"`
 	User     users.User `gorm:"foreignKey:UserID" json:"-"`
