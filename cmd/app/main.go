@@ -9,6 +9,7 @@ import (
 	"deployer.com/modules/containers"
 	"deployer.com/modules/deployments"
 	"deployer.com/modules/domains"
+	"deployer.com/modules/projects"
 	"deployer.com/modules/scripts"
 	"deployer.com/modules/secrets"
 	"deployer.com/modules/servers"
@@ -72,6 +73,11 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 		routes := deployments.NewDeploymentsController(&group, deployments.NewDeploymentsService(db))
 		routes.RegisterRoutes(&group)
 	}
+	{
+		group := api.Group("/projects")
+		routes := projects.NewProjectsController(&group, projects.NewProjectsService(db))
+		routes.RegisterRoutes(&group)
+	}
 }
 
 func main() {
@@ -92,6 +98,8 @@ func main() {
 						&domains.Domain{},
 						&domains.SubDomain{},
 						&deployments.Deployment{},
+						&projects.Project{},
+						&projects.ProjectDeployments{},
 					); err != nil {
 						log.Fatal("AutoMigrate failed:", err)
 					}

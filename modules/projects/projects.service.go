@@ -1,0 +1,237 @@
+package projects
+
+import (
+	"time"
+
+	"deployer.com/modules/projects/dto"
+	"gorm.io/gorm"
+)
+
+type ProjectsService struct {
+	db *gorm.DB
+}
+
+type DeploymentResponse struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ProjectDeploymentResponse struct {
+	ID         uint               `json:"id"`
+	Deployment DeploymentResponse `json:"deployment"`
+	Order      int                `json:"order"`
+	Status     string             `json:"status"`
+	Logs       string             `json:"logs"`
+}
+
+type ProjectResponse struct {
+	ID                 uint                        `json:"id"`
+	Name               string                      `json:"name"`
+	ProjectDeployments []ProjectDeploymentResponse `json:"project_deployments"`
+	CreatedAt          time.Time                   `json:"created_at"`
+	UpdatedAt          time.Time                   `json:"updated_at"`
+}
+
+func NewProjectsService(db *gorm.DB) *ProjectsService {
+	return &ProjectsService{db: db}
+}
+
+func (s *ProjectsService) GetProjects(userId uint) ([]ProjectResponse, error) {
+	var projects []Project
+	if err := s.db.Where("user_id = ?", userId).Preload("ProjectDeployments.Deployment").Order("created_at DESC").Find(&projects).Error; err != nil {
+		return nil, err
+	}
+
+	result := make([]ProjectResponse, len(projects))
+	for i, project := range projects {
+		projectDeployments := make([]ProjectDeploymentResponse, len(project.ProjectDeployments))
+		for j, pd := range project.ProjectDeployments {
+			projectDeployments[j] = ProjectDeploymentResponse{
+				ID: pd.ID,
+				Deployment: DeploymentResponse{
+					ID:        pd.Deployment.ID,
+					Name:      pd.Deployment.Name,
+					CreatedAt: pd.Deployment.CreatedAt,
+					UpdatedAt: pd.Deployment.UpdatedAt,
+				},
+				Order:  pd.Order,
+				Status: pd.Status,
+				Logs:   pd.Logs,
+			}
+		}
+
+		result[i] = ProjectResponse{
+			ID:                 project.ID,
+			Name:               project.Name,
+			ProjectDeployments: projectDeployments,
+			CreatedAt:          project.CreatedAt,
+			UpdatedAt:          project.UpdatedAt,
+		}
+	}
+	return result, nil
+}
+
+func (s *ProjectsService) GetProject(id, userId uint) (ProjectResponse, error) {
+	var project Project
+	if err := s.db.Where("id = ? AND user_id = ?", id, userId).Preload("ProjectDeployments.Deployment").First(&project).Error; err != nil {
+		return ProjectResponse{}, err
+	}
+
+	projectDeployments := make([]ProjectDeploymentResponse, len(project.ProjectDeployments))
+	for j, pd := range project.ProjectDeployments {
+		projectDeployments[j] = ProjectDeploymentResponse{
+			ID: pd.ID,
+			Deployment: DeploymentResponse{
+				ID:        pd.Deployment.ID,
+				Name:      pd.Deployment.Name,
+				CreatedAt: pd.Deployment.CreatedAt,
+				UpdatedAt: pd.Deployment.UpdatedAt,
+			},
+			Order:  pd.Order,
+			Status: pd.Status,
+			Logs:   pd.Logs,
+		}
+	}
+
+	return ProjectResponse{
+		ID:                 project.ID,
+		Name:               project.Name,
+		ProjectDeployments: projectDeployments,
+		CreatedAt:          project.CreatedAt,
+		UpdatedAt:          project.UpdatedAt,
+	}, nil
+}
+
+func (s *ProjectsService) CreateProject(userId uint, createDto dto.CreateProjectDto) (ProjectResponse, error) {
+	// Start a transaction
+	tx := s.db.Begin()
+	if tx.Error != nil {
+		return ProjectResponse{}, tx.Error
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Create the project
+	project := Project{
+		Name:   createDto.Name,
+		UserID: userId,
+	}
+
+	if err := tx.Create(&project).Error; err != nil {
+		tx.Rollback()
+		return ProjectResponse{}, err
+	}
+
+	// Create project deployments if provided
+	projectDeployments := make([]ProjectDeployments, 0)
+	for _, pd := range createDto.ProjectDeployments {
+		projectDeployment := ProjectDeployments{
+			ProjectID:    project.ID,
+			DeploymentID: pd.DeploymentID,
+			Order:        pd.Order,
+			Status:       "pending", // Default status
+		}
+		if err := tx.Create(&projectDeployment).Error; err != nil {
+			tx.Rollback()
+			return ProjectResponse{}, err
+		}
+		projectDeployments = append(projectDeployments, projectDeployment)
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return ProjectResponse{}, err
+	}
+
+	// Return the created project
+	return s.GetProject(project.ID, userId)
+}
+
+func (s *ProjectsService) UpdateProject(id, userId uint, updates map[string]interface{}) (ProjectResponse, error) {
+	var project Project
+	if err := s.db.Where("id = ? AND user_id = ?", id, userId).First(&project).Error; err != nil {
+		return ProjectResponse{}, err
+	}
+
+	// Update only allowed fields
+	allowedFields := map[string]bool{
+		"name": true,
+	}
+
+	filteredUpdates := make(map[string]interface{})
+	for key, value := range updates {
+		if allowedFields[key] {
+			filteredUpdates[key] = value
+		}
+	}
+
+	if len(filteredUpdates) > 0 {
+		if err := s.db.Model(&project).Updates(filteredUpdates).Error; err != nil {
+			return ProjectResponse{}, err
+		}
+	}
+
+	// Handle project deployments update if provided
+	if projectDeployments, exists := updates["project_deployments"]; exists {
+		if deployments, ok := projectDeployments.([]dto.ProjectDeployments); ok {
+			// Start transaction for updating deployments
+			tx := s.db.Begin()
+			if tx.Error != nil {
+				return ProjectResponse{}, tx.Error
+			}
+
+			// Delete existing project deployments
+			if err := tx.Where("project_id = ?", id).Delete(&ProjectDeployments{}).Error; err != nil {
+				tx.Rollback()
+				return ProjectResponse{}, err
+			}
+
+			// Create new project deployments
+			for _, pd := range deployments {
+				projectDeployment := ProjectDeployments{
+					ProjectID:    id,
+					DeploymentID: pd.DeploymentID,
+					Order:        pd.Order,
+					Status:       "pending", // Default status
+				}
+				if err := tx.Create(&projectDeployment).Error; err != nil {
+					tx.Rollback()
+					return ProjectResponse{}, err
+				}
+			}
+
+			if err := tx.Commit().Error; err != nil {
+				return ProjectResponse{}, err
+			}
+		}
+	}
+
+	return s.GetProject(id, userId)
+}
+
+func (s *ProjectsService) DeleteProject(id, userId uint) error {
+	// Start transaction
+	tx := s.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	// Delete project deployments first (foreign key constraint)
+	if err := tx.Where("project_id = ?", id).Delete(&ProjectDeployments{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Delete the project
+	if err := tx.Where("id = ? AND user_id = ?", id, userId).Delete(&Project{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
