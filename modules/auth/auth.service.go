@@ -13,15 +13,27 @@ type AuthService struct {
 	userService *users.UsersService
 }
 
+type UserResponse struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	FirstName string    `gorm:"not null" json:"first_name"`
+	LastName  string    `gorm:"not null" json:"last_name"`
+	Username  string    `gorm:"unique;not null" json:"username"`
+	Email     string    `gorm:"unique;not null" json:"email"`
+	Phone     string    `gorm:"not null" json:"phone"`
+	Country   string    `gorm:"not null" json:"country"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
 type LoginResponse struct {
-	AccessToken  string      `json:"access_token"`
-	RefreshToken string      `json:"refresh_token"`
-	User         *users.User `json:"user"`
-	Exp          int64       `json:"exp"`
+	AccessToken  string        `json:"access_token"`
+	RefreshToken string        `json:"refresh_token"`
+	User         *UserResponse `json:"user"`
+	Exp          int64         `json:"exp"`
 }
 
 type MeResponse struct {
-	User *users.User `json:"user"`
+	User *UserResponse `json:"user"`
 }
 
 type RefreshTokenResponse struct {
@@ -59,8 +71,16 @@ func (s *AuthService) Login(dto dto.LoginDto) (*LoginResponse, error) {
 	return &LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         &user,
-		Exp:          time.Now().Add(15 * time.Minute).Unix(),
+		User: &UserResponse{
+			ID:        user.ID,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Username:  user.Username,
+			Email:     user.Email,
+			Phone:     user.Phone,
+			Country:   user.Country,
+		},
+		Exp: time.Now().Add(15 * time.Minute).Unix(),
 	}, nil
 }
 
@@ -91,8 +111,16 @@ func (s *AuthService) Register(dto dto.RegisterDto) (*LoginResponse, error) {
 	return &LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         &user,
-		Exp:          time.Now().Add(15 * time.Minute).Unix(),
+		User: &UserResponse{
+			ID:        user.ID,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Username:  user.Username,
+			Email:     user.Email,
+			Phone:     user.Phone,
+			Country:   user.Country,
+		},
+		Exp: time.Now().Add(15 * time.Minute).Unix(),
 	}, nil
 }
 
@@ -128,7 +156,15 @@ func (s *AuthService) Me(userClaims *libs.UserClaims) (*MeResponse, error) {
 		return nil, err
 	}
 	return &MeResponse{
-		User: &user,
+		User: &UserResponse{
+			ID:        user.ID,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Username:  user.Username,
+			Email:     user.Email,
+			Phone:     user.Phone,
+			Country:   user.Country,
+		},
 	}, nil
 }
 
