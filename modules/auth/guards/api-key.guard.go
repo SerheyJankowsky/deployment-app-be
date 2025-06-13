@@ -14,7 +14,7 @@ type ApiKeyService interface {
 func ApiKeyGuard(apiKeyService ApiKeyService) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		// Extract API key from X-API-Key header
-		apiKey := ctx.Get("X-API-Key")
+		apiKey := ctx.Get("API-Key")
 		if apiKey == "" {
 			// Also check Authorization header with "Bearer" prefix for API keys
 			authHeader := ctx.Get("Authorization")

@@ -62,10 +62,10 @@ Authorization: Bearer <jwt_token>
 
 ## Using API Keys
 
-### Method 1: X-API-Key Header (Recommended)
+### Method 1: API-Key Header (Recommended)
 
 ```bash
-curl -H "X-API-Key: your-64-character-api-key" \
+curl -H "API-Key: your-64-character-api-key" \
      https://your-api.com/api/v1/api-secrets/
 ```
 
@@ -175,7 +175,7 @@ ENCRYPTION_KEY=64-character-hex-string-for-aes-256-encryption
 ```json
 {
   "message": "API key required",
-  "error": "Missing X-API-Key header"
+  "error": "Missing API-Key header"
 }
 ```
 
@@ -213,7 +213,7 @@ ENCRYPTION_KEY=64-character-hex-string-for-aes-256-encryption
 import requests
 
 api_key = "your-64-character-api-key"
-headers = {"X-API-Key": api_key}
+headers = {"API-Key": api_key}
 
 response = requests.get(
     "https://your-api.com/api/v1/api-secrets/",
@@ -240,7 +240,7 @@ async function getSecrets() {
       "https://your-api.com/api/v1/api-secrets/",
       {
         headers: {
-          "X-API-Key": apiKey,
+          "API-Key": apiKey,
         },
       }
     );
@@ -262,12 +262,12 @@ curl -X POST https://your-api.com/api/v1/auth/generate-api-key \
   -H "Authorization: Bearer your-jwt-token"
 
 # Use API key to access protected resource
-curl -H "X-API-Key: your-api-key" \
+curl -H "API-Key: your-api-key" \
      https://your-api.com/api/v1/api-secrets/
 
 # Create new secret with API key
 curl -X POST https://your-api.com/api/v1/api-secrets/ \
-  -H "X-API-Key: your-api-key" \
+  -H "API-Key: your-api-key" \
   -H "Content-Type: application/json" \
   -d '{"name": "test", "content": "secret-value"}'
 ```
