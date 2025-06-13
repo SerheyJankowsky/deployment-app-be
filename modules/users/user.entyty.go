@@ -5,7 +5,7 @@ import (
 )
 
 type User struct {
-	*gorm.Model
+	gorm.Model
 	// ID        uint   `gorm:"primaryKey" json:"id"`
 	FirstName string `gorm:"not null" json:"first_name"`
 	LastName  string `gorm:"not null" json:"last_name"`
@@ -13,6 +13,7 @@ type User struct {
 	Email     string `gorm:"unique;not null" json:"email"`
 	Phone     string `gorm:"not null" json:"phone"`
 	Country   string `gorm:"not null" json:"country"`
+	ApiKey    string `gorm:"not null" json:"api_key"`
 	// City         string    `gorm:"not null" json:"city"`
 	// Address      string    `gorm:"not null" json:"address"`
 	// ZipCode      string    `gorm:"not null" json:"zip_code"`
@@ -21,6 +22,7 @@ type User struct {
 	// Bio          string    `gorm:"not null" json:"bio"`
 	PasswordHash string `gorm:"not null" json:"-"`
 	IV           string `gorm:"not null" json:"-"`
+
 	// CreatedAt    time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	// UpdatedAt    time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	// DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`

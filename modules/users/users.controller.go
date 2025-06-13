@@ -21,6 +21,7 @@ func NewUsersController(router *fiber.Router, usersService *UsersService) *Users
 func (c *UsersController) RegisterRoutes(router *fiber.Router) {
 	// (*c.router).Get("/:id", guards.JwtGuard, c.GetUser)
 	(*c.router).Patch("/", guards.JwtGuard, c.UpdateUser)
+	(*c.router).Patch("/api-key", guards.JwtGuard, c.UpdateUserApiKey)
 	(*c.router).Delete("/", guards.JwtGuard, c.DeleteUser)
 
 }
@@ -56,6 +57,17 @@ func (c *UsersController) UpdateUser(ctx *fiber.Ctx) error {
 		})
 	}
 	user, err := c.usersService.UpdateUser(&updateUser)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	return ctx.JSON(user)
+}
+
+func (c *UsersController) UpdateUserApiKey(ctx *fiber.Ctx) error {
+	userClaims := ctx.Locals("user").(*libs.UserClaims)
+	user, err := c.usersService.UpdateUserApiKey(uint(userClaims.UserID), userClaims.IV)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

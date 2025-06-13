@@ -22,6 +22,13 @@ func (s *UsersService) GetUser(id uint) (User, error) {
 	if err := s.db.First(&user, id).Error; err != nil {
 		return User{}, err
 	}
+	if user.ApiKey != "" {
+		decryptedApiKey, err := s.encryptionService.Decrypt(user.ApiKey, user.IV)
+		if err != nil {
+			return User{}, err
+		}
+		user.ApiKey = decryptedApiKey
+	}
 	return user, nil
 }
 
@@ -75,6 +82,18 @@ func (s *UsersService) UpdateUser(user *dto.UpdateUserDto) (User, error) {
 		return User{}, err
 	}
 	return userEntity, nil
+}
+
+func (s *UsersService) UpdateUserApiKey(userId uint, iv string) (User, error) {
+	apiKey := libs.GenerateApiKey()
+	encryptedApiKey, err := s.encryptionService.Encrypt(apiKey, iv)
+	if err != nil {
+		return User{}, err
+	}
+	if err := s.db.Model(&User{}).Where("id = ?", userId).Update("api_key", encryptedApiKey).Error; err != nil {
+		return User{}, err
+	}
+	return s.GetUser(userId)
 }
 
 func (s *UsersService) DeleteUser(id uint) error {
