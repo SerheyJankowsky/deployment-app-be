@@ -15,12 +15,22 @@ import (
 	"deployer.com/modules/servers"
 	"deployer.com/modules/users"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 )
 
 func NewFiber() *fiber.App {
-	return fiber.New()
+	app := fiber.New()
+
+	// Enable CORS
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
+	}))
+
+	return app
 }
 
 func RegisterRoutes(app *fiber.App, db *gorm.DB) {
