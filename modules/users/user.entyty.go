@@ -13,7 +13,7 @@ type User struct {
 	Email     string `gorm:"unique;not null" json:"email"`
 	Phone     string `gorm:"not null" json:"phone"`
 	Country   string `gorm:"not null" json:"country"`
-	ApiKey    string `gorm:"not null" json:"api_key"`
+	ApiKey    string `gorm:"default:null" json:"api_key"`
 	// City         string    `gorm:"not null" json:"city"`
 	// Address      string    `gorm:"not null" json:"address"`
 	// ZipCode      string    `gorm:"not null" json:"zip_code"`
