@@ -102,3 +102,52 @@ func (s *UsersService) DeleteUser(id uint) error {
 	}
 	return nil
 }
+
+func (s *UsersService) GetUserByApiKey(apiKey string) (interface{}, error) {
+	var users []User
+	if err := s.db.Where("api_key != ? AND api_key != ?", "", "null").Find(&users).Error; err != nil {
+		return User{}, err
+	}
+
+	// Check each user by decrypting their API key
+	for _, user := range users {
+		if user.ApiKey != "" && user.IV != "" {
+			decryptedApiKey, err := s.encryptionService.Decrypt(user.ApiKey, user.IV)
+			if err != nil {
+				continue // Skip this user if decryption fails
+			}
+			if decryptedApiKey == apiKey {
+				// Return user with decrypted API key
+				user.ApiKey = decryptedApiKey
+				return user, nil
+			}
+		}
+	}
+
+	return User{}, gorm.ErrRecordNotFound
+}
+
+func (s *UsersService) GenerateApiKey(userId uint) (User, error) {
+	var user User
+	if err := s.db.First(&user, userId).Error; err != nil {
+		return User{}, err
+	}
+
+	apiKey := libs.GenerateApiKey()
+	encryptedApiKey, err := s.encryptionService.Encrypt(apiKey, user.IV)
+	if err != nil {
+		return User{}, err
+	}
+
+	if err := s.db.Model(&User{}).Where("id = ?", userId).Update("api_key", encryptedApiKey).Error; err != nil {
+		return User{}, err
+	}
+
+	// Return user with decrypted API key for response
+	user.ApiKey = apiKey
+	return user, nil
+}
+
+func (s *UsersService) RevokeApiKey(userId uint) error {
+	return s.db.Model(&User{}).Where("id = ?", userId).Update("api_key", "").Error
+}

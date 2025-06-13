@@ -6,6 +6,7 @@ import (
 	"deployer.com/libs"
 	"deployer.com/modules/auth/guards"
 	"deployer.com/modules/secrets/dto"
+	"deployer.com/modules/users"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -24,6 +25,19 @@ func (c *SecretsController) RegisterRoutes(router *fiber.Router) {
 	(*c.router).Post("/", guards.JwtGuard, c.CreateSecret)
 	(*c.router).Patch("/:id", guards.JwtGuard, c.UpdateSecret)
 	(*c.router).Delete("/:id", guards.JwtGuard, c.DeleteSecret)
+}
+
+// RegisterApiKeyRoutes creates API key only protected routes for external integrations
+func (c *SecretsController) RegisterApiKeyRoutes(router *fiber.Router, apiKeyService guards.ApiKeyService) {
+	apiKeyGuard := guards.ApiKeyGuard(apiKeyService)
+	combinedGuard := guards.CombinedGuard(apiKeyService)
+
+	// API key only routes (for external integrations)
+	(*c.router).Get("/", apiKeyGuard, c.GetSecretsApiKey)
+	(*c.router).Get("/:id", apiKeyGuard, c.GetSecretApiKey)
+
+	// Combined auth routes (accept both JWT and API key)
+	(*c.router).Post("/", combinedGuard, c.CreateSecret)
 }
 
 func (c *SecretsController) GetSecrets(ctx *fiber.Ctx) error {
@@ -125,5 +139,61 @@ func (c *SecretsController) DeleteSecret(ctx *fiber.Ctx) error {
 	}
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Secret deleted successfully",
+	})
+}
+
+// GetSecretsApiKey handles API key authenticated requests
+func (c *SecretsController) GetSecretsApiKey(ctx *fiber.Ctx) error {
+	// Get user from API key authentication
+	userInterface := ctx.Locals("user")
+
+	// Handle different authentication methods
+	authMethod := ctx.Locals("auth_method")
+	if authMethod == "api_key" {
+		// Import users package for proper type casting
+		if user, ok := userInterface.(users.User); ok {
+			secrets, err := c.secretsService.GetSecrets(user.ID, user.IV)
+			if err != nil {
+				return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+			return ctx.Status(fiber.StatusOK).JSON(secrets)
+		}
+	}
+
+	return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		"error": "Invalid user context",
+	})
+}
+
+// GetSecretApiKey handles API key authenticated requests for single secret
+func (c *SecretsController) GetSecretApiKey(ctx *fiber.Ctx) error {
+	id, err := strconv.ParseUint(ctx.Params("id"), 10, 64)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// Get user from API key authentication
+	userInterface := ctx.Locals("user")
+
+	// Handle different authentication methods
+	authMethod := ctx.Locals("auth_method")
+	if authMethod == "api_key" {
+		if user, ok := userInterface.(users.User); ok {
+			secret, err := c.secretsService.GetSecret(uint(id), user.ID, user.IV)
+			if err != nil {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+			return ctx.Status(fiber.StatusOK).JSON(secret)
+		}
+	}
+
+	return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		"error": "Invalid user context",
 	})
 }

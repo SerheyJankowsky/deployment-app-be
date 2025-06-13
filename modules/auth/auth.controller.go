@@ -22,6 +22,9 @@ func (c *AuthController) RegisterRoutes(router *fiber.Router) {
 	(*router).Post("/register", c.Register)
 	(*router).Post("/refresh", c.RefreshToken)
 	(*router).Get("/me", guards.JwtGuard, c.Me)
+	(*router).Post("/generate-api-key", guards.JwtGuard, c.GenerateApiKey)
+	(*router).Delete("/revoke-api-key", guards.JwtGuard, c.RevokeApiKey)
+	(*router).Get("/api-key", guards.JwtGuard, c.GetApiKey)
 }
 
 func (c *AuthController) Login(ctx *fiber.Ctx) error {
@@ -107,4 +110,56 @@ func (c *AuthController) Me(ctx *fiber.Ctx) error {
 		})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(user)
+}
+
+func (c *AuthController) GenerateApiKey(ctx *fiber.Ctx) error {
+	userClaims := ctx.Locals("user").(*libs.UserClaims)
+	user, err := c.authService.GenerateApiKey(userClaims.UserID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to generate API key",
+			"error":   err.Error(),
+		})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "API key generated successfully",
+		"api_key": user.ApiKey,
+		"user_id": user.ID,
+	})
+}
+
+func (c *AuthController) RevokeApiKey(ctx *fiber.Ctx) error {
+	userClaims := ctx.Locals("user").(*libs.UserClaims)
+	err := c.authService.RevokeApiKey(userClaims.UserID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to revoke API key",
+			"error":   err.Error(),
+		})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "API key revoked successfully",
+	})
+}
+
+func (c *AuthController) GetApiKey(ctx *fiber.Ctx) error {
+	userClaims := ctx.Locals("user").(*libs.UserClaims)
+	user, err := c.authService.GetUserApiKey(userClaims.UserID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to get API key",
+			"error":   err.Error(),
+		})
+	}
+
+	response := fiber.Map{
+		"has_api_key": user.ApiKey != "",
+	}
+
+	// Only show the API key if it exists (don't show the actual key for security)
+	if user.ApiKey != "" {
+		response["api_key_preview"] = user.ApiKey[:8] + "..." // Show only first 8 characters
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response)
 }

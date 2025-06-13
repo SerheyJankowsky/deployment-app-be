@@ -131,3 +131,23 @@ func (s *AuthService) Me(userClaims *libs.UserClaims) (*MeResponse, error) {
 		User: &user,
 	}, nil
 }
+
+func (s *AuthService) GenerateApiKey(userID uint) (*users.User, error) {
+	user, err := s.userService.GenerateApiKey(userID)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *AuthService) RevokeApiKey(userID uint) error {
+	return s.userService.RevokeApiKey(userID)
+}
+
+func (s *AuthService) GetUserApiKey(userID uint) (*users.User, error) {
+	user, err := s.userService.GetUser(userID)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

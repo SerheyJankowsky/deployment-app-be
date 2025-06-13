@@ -28,15 +28,25 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	api.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
 	})
+
+	// Create user service instance for API key validation
+	userService := users.NewUsersService(db)
+
 	{
 		group := api.Group("/auth")
-		routes := auth.NewAuthController(auth.NewAuthService(users.NewUsersService(db)))
+		routes := auth.NewAuthController(auth.NewAuthService(userService))
 		routes.RegisterRoutes(&group)
 	}
 	{
 		group := api.Group("/secrets")
 		routes := secrets.NewSecretsController(&group, secrets.NewSecretsService(db))
 		routes.RegisterRoutes(&group)
+	}
+	// API key only routes for external integrations
+	{
+		group := api.Group("/api-secrets")
+		routes := secrets.NewSecretsController(&group, secrets.NewSecretsService(db))
+		routes.RegisterApiKeyRoutes(&group, userService)
 	}
 	{
 		group := api.Group("/users")
