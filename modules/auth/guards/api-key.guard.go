@@ -26,7 +26,7 @@ func ApiKeyGuard(apiKeyService ApiKeyService) fiber.Handler {
 		if apiKey == "" {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"message": "API key required",
-				"error":   "Missing X-API-Key header",
+				"error":   "Missing API-Key header",
 			})
 		}
 
