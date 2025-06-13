@@ -9,6 +9,7 @@ type ProjectDeployments struct {
 	Deployment   deployments.Deployment `json:"deployment"`
 	DeploymentID uint                   `json:"deployment_id"`
 	Order        int                    `json:"order"`
+	Status       string                 `json:"status,omitempty"`
 }
 
 type CreateProjectDto struct {

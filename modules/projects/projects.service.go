@@ -185,23 +185,62 @@ func (s *ProjectsService) UpdateProject(id, userId uint, updates map[string]inte
 				return ProjectResponse{}, tx.Error
 			}
 
-			// Delete existing project deployments
-			if err := tx.Where("project_id = ?", id).Delete(&ProjectDeployments{}).Error; err != nil {
+			// Get existing project deployments
+			var existingDeployments []ProjectDeployments
+			if err := tx.Where("project_id = ?", id).Find(&existingDeployments).Error; err != nil {
 				tx.Rollback()
 				return ProjectResponse{}, err
 			}
 
-			// Create new project deployments
+			// Create maps for easier lookup
+			existingMap := make(map[uint]*ProjectDeployments)
+			for i := range existingDeployments {
+				existingMap[existingDeployments[i].DeploymentID] = &existingDeployments[i]
+			}
+
+			newDeploymentIDs := make(map[uint]bool)
+
+			// Process incoming deployments
 			for _, pd := range deployments {
-				projectDeployment := ProjectDeployments{
-					ProjectID:    id,
-					DeploymentID: pd.DeploymentID,
-					Order:        pd.Order,
-					Status:       "pending", // Default status
+				newDeploymentIDs[pd.DeploymentID] = true
+
+				if existing, found := existingMap[pd.DeploymentID]; found {
+					// Update existing ProjectDeployment
+					existing.Order = pd.Order
+					// Update status if provided, otherwise keep existing
+					if pd.Status != "" {
+						existing.Status = pd.Status
+					}
+					if err := tx.Save(existing).Error; err != nil {
+						tx.Rollback()
+						return ProjectResponse{}, err
+					}
+				} else {
+					// Create new ProjectDeployment
+					status := "pending" // Default status for new ones
+					if pd.Status != "" {
+						status = pd.Status
+					}
+					projectDeployment := ProjectDeployments{
+						ProjectID:    id,
+						DeploymentID: pd.DeploymentID,
+						Order:        pd.Order,
+						Status:       status,
+					}
+					if err := tx.Create(&projectDeployment).Error; err != nil {
+						tx.Rollback()
+						return ProjectResponse{}, err
+					}
 				}
-				if err := tx.Create(&projectDeployment).Error; err != nil {
-					tx.Rollback()
-					return ProjectResponse{}, err
+			}
+
+			// Remove ProjectDeployments that are not in the new list
+			for deploymentID, existing := range existingMap {
+				if !newDeploymentIDs[deploymentID] {
+					if err := tx.Delete(existing).Error; err != nil {
+						tx.Rollback()
+						return ProjectResponse{}, err
+					}
 				}
 			}
 
