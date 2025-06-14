@@ -29,7 +29,7 @@ func NewDomainsService(db *gorm.DB) *DomainsService {
 
 func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, error) {
 	var domains []Domain
-	if err := s.db.Where("user_id = ?", userId).Select("id, name,ssl_cert,sub_domains, ssl_key, created_at, updated_at").Order("created_at DESC").Find(&domains).Error; err != nil {
+	if err := s.db.Where("user_id = ?", userId).Preload("SubDomains").Select("id, name,ssl_cert,sub_domains, ssl_key, created_at, updated_at").Order("created_at DESC").Find(&domains).Error; err != nil {
 		return nil, err
 	}
 	result := make([]DomainResponse, len(domains))
@@ -57,7 +57,7 @@ func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, e
 
 func (s *DomainsService) GetDomain(id, userId uint, iv string) (DomainResponse, error) {
 	var domain Domain
-	if err := s.db.Where("id = ? AND user_id = ?", id, userId).First(&domain).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userId).Preload("SubDomains").First(&domain).Error; err != nil {
 		return DomainResponse{}, err
 	}
 	decodedCert, err := s.encryptionService.Decrypt(domain.SSLCert, iv)
@@ -69,12 +69,13 @@ func (s *DomainsService) GetDomain(id, userId uint, iv string) (DomainResponse, 
 		return DomainResponse{}, err
 	}
 	return DomainResponse{
-		ID:        domain.ID,
-		Name:      domain.Name,
-		SSLCert:   decodedCert,
-		SSLKey:    decodedKey,
-		CreatedAt: domain.CreatedAt,
-		UpdatedAt: domain.UpdatedAt,
+		ID:         domain.ID,
+		Name:       domain.Name,
+		SSLCert:    decodedCert,
+		SSLKey:     decodedKey,
+		SubDomains: domain.SubDomains,
+		CreatedAt:  domain.CreatedAt,
+		UpdatedAt:  domain.UpdatedAt,
 	}, nil
 }
 
