@@ -1,6 +1,7 @@
 package domains
 
 import (
+	"fmt"
 	"time"
 
 	"deployer.com/libs"
@@ -41,6 +42,7 @@ func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, e
 			decoded, err := s.encryptionService.Decrypt(domain.SSLCert, iv)
 			if err != nil {
 				// If decryption fails, return as-is (might be already decrypted)
+				fmt.Println("Decryption failed for SSL cert", err)
 				decodedCert = domain.SSLCert
 			} else {
 				decodedCert = decoded
@@ -52,6 +54,7 @@ func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, e
 			decoded, err := s.encryptionService.Decrypt(domain.SSLKey, iv)
 			if err != nil {
 				// If decryption fails, return as-is (might be already decrypted)
+				fmt.Println("Decryption failed for SSL key", err)
 				decodedKey = domain.SSLKey
 			} else {
 				decodedKey = decoded
