@@ -34,14 +34,30 @@ func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, e
 	}
 	result := make([]DomainResponse, len(domains))
 	for i, domain := range domains {
-		decodedCert, err := s.encryptionService.Decrypt(domain.SSLCert, iv)
-		if err != nil {
-			return nil, err
+		var decodedCert, decodedKey string
+
+		// Decrypt SSL certificate only if not empty
+		if domain.SSLCert != "" {
+			decoded, err := s.encryptionService.Decrypt(domain.SSLCert, iv)
+			if err != nil {
+				// If decryption fails, return as-is (might be already decrypted)
+				decodedCert = domain.SSLCert
+			} else {
+				decodedCert = decoded
+			}
 		}
-		decodedKey, err := s.encryptionService.Decrypt(domain.SSLKey, iv)
-		if err != nil {
-			return nil, err
+
+		// Decrypt SSL key only if not empty
+		if domain.SSLKey != "" {
+			decoded, err := s.encryptionService.Decrypt(domain.SSLKey, iv)
+			if err != nil {
+				// If decryption fails, return as-is (might be already decrypted)
+				decodedKey = domain.SSLKey
+			} else {
+				decodedKey = decoded
+			}
 		}
+
 		result[i] = DomainResponse{
 			ID:         domain.ID,
 			Name:       domain.Name,
@@ -60,14 +76,31 @@ func (s *DomainsService) GetDomain(id, userId uint, iv string) (DomainResponse, 
 	if err := s.db.Where("id = ? AND user_id = ?", id, userId).Preload("SubDomains").First(&domain).Error; err != nil {
 		return DomainResponse{}, err
 	}
-	decodedCert, err := s.encryptionService.Decrypt(domain.SSLCert, iv)
-	if err != nil {
-		return DomainResponse{}, err
+
+	var decodedCert, decodedKey string
+
+	// Decrypt SSL certificate only if not empty
+	if domain.SSLCert != "" {
+		decoded, err := s.encryptionService.Decrypt(domain.SSLCert, iv)
+		if err != nil {
+			// If decryption fails, return as-is (might be already decrypted)
+			decodedCert = domain.SSLCert
+		} else {
+			decodedCert = decoded
+		}
 	}
-	decodedKey, err := s.encryptionService.Decrypt(domain.SSLKey, iv)
-	if err != nil {
-		return DomainResponse{}, err
+
+	// Decrypt SSL key only if not empty
+	if domain.SSLKey != "" {
+		decoded, err := s.encryptionService.Decrypt(domain.SSLKey, iv)
+		if err != nil {
+			// If decryption fails, return as-is (might be already decrypted)
+			decodedKey = domain.SSLKey
+		} else {
+			decodedKey = decoded
+		}
 	}
+
 	return DomainResponse{
 		ID:         domain.ID,
 		Name:       domain.Name,
