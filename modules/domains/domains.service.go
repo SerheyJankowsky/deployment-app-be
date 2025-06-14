@@ -146,11 +146,10 @@ func (s *DomainsService) UpdateDomain(id, userId uint, updates map[string]interf
 	if err := s.db.Where("id = ? AND user_id = ?", id, userId).Preload("SubDomains").First(&domain).Error; err != nil {
 		return DomainResponse{}, err
 	}
-	libs.SetStructFieldsFromMap(&domain, updates)
 
 	// Encrypt SSL certificate if updated
 	if updates["ssl_cert"] != nil {
-		encrypted, err := s.encryptionService.Encrypt(domain.SSLCert, iv)
+		encrypted, err := s.encryptionService.Encrypt(updates["ssl_cert"].(string), iv)
 		if err != nil {
 			return DomainResponse{}, err
 		}
@@ -159,12 +158,15 @@ func (s *DomainsService) UpdateDomain(id, userId uint, updates map[string]interf
 
 	// Encrypt SSL key if updated
 	if updates["ssl_key"] != nil {
-		encrypted, err := s.encryptionService.Encrypt(domain.SSLKey, iv)
+		encrypted, err := s.encryptionService.Encrypt(updates["ssl_key"].(string), iv)
 		if err != nil {
 			return DomainResponse{}, err
 		}
 		domain.SSLKey = encrypted
 	}
+
+	// Set other non-encrypted fields
+	libs.SetStructFieldsFromMap(&domain, updates)
 
 	if err := s.db.Save(&domain).Error; err != nil {
 		return DomainResponse{}, err
