@@ -48,7 +48,8 @@ func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, e
 		if domain.SSLCert != "" {
 			decodedCert, err = s.encryptionService.Decrypt(domain.SSLCert, iv)
 			if err != nil {
-				return nil, err
+				// If decryption fails, skip this field (corrupted data)
+				decodedCert = ""
 			}
 		}
 
@@ -56,7 +57,8 @@ func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, e
 		if domain.SSLKey != "" {
 			decodedKey, err = s.encryptionService.Decrypt(domain.SSLKey, iv)
 			if err != nil {
-				return nil, err
+				// If decryption fails, skip this field (corrupted data)
+				decodedKey = ""
 			}
 		}
 
@@ -86,7 +88,8 @@ func (s *DomainsService) GetDomain(id, userId uint, iv string) (DomainResponse, 
 	if domain.SSLCert != "" {
 		decodedCert, err = s.encryptionService.Decrypt(domain.SSLCert, iv)
 		if err != nil {
-			return DomainResponse{}, err
+			// If decryption fails, skip this field (corrupted data)
+			decodedCert = ""
 		}
 	}
 
@@ -94,7 +97,8 @@ func (s *DomainsService) GetDomain(id, userId uint, iv string) (DomainResponse, 
 	if domain.SSLKey != "" {
 		decodedKey, err = s.encryptionService.Decrypt(domain.SSLKey, iv)
 		if err != nil {
-			return DomainResponse{}, err
+			// If decryption fails, skip this field (corrupted data)
+			decodedKey = ""
 		}
 	}
 
