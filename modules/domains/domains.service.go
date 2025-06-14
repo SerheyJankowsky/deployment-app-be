@@ -29,7 +29,7 @@ func NewDomainsService(db *gorm.DB) *DomainsService {
 
 func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, error) {
 	var domains []Domain
-	if err := s.db.Where("user_id = ?", userId).Preload("SubDomains").Select("id, name,ssl_cert,sub_domains, ssl_key, created_at, updated_at").Order("created_at DESC").Find(&domains).Error; err != nil {
+	if err := s.db.Where("user_id = ?", userId).Preload("SubDomains").Select("id, name, ssl_cert, ssl_key, created_at, updated_at").Order("created_at DESC").Find(&domains).Error; err != nil {
 		return nil, err
 	}
 	result := make([]DomainResponse, len(domains))
