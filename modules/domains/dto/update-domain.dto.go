@@ -4,8 +4,8 @@ import "github.com/go-playground/validator/v10"
 
 type UpdateDomainDto struct {
 	Name    *string `json:"name" validate:"omitempty,min=1,max=255"`
-	SSLCert *string `json:"ssl_cert" validate:"omitempty,min=1,max=10000"`
-	SSLKey  *string `json:"ssl_key" validate:"omitempty,min=1,max=10000"`
+	SSLCert *string `json:"ssl_cert" validate:"omitempty,min=0,max=10000"`
+	SSLKey  *string `json:"ssl_key" validate:"omitempty,min=0,max=10000"`
 }
 
 func (dto *UpdateDomainDto) GetUpdatesDomain() (map[string]interface{}, []string) {
