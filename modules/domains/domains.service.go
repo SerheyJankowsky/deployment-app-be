@@ -109,10 +109,12 @@ func (s *DomainsService) CreateDomain(userId uint, dto dto.CreateDomainDto, iv s
 
 func (s *DomainsService) UpdateDomain(id, userId uint, updates map[string]interface{}, iv string) (DomainResponse, error) {
 	var domain Domain
-	if err := s.db.Where("id = ? AND user_id = ?", id, userId).First(&domain).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userId).Preload("SubDomains").First(&domain).Error; err != nil {
 		return DomainResponse{}, err
 	}
 	libs.SetStructFieldsFromMap(&domain, updates)
+
+	// Encrypt SSL certificate if updated
 	if updates["ssl_cert"] != nil {
 		encrypted, err := s.encryptionService.Encrypt(domain.SSLCert, iv)
 		if err != nil {
@@ -120,6 +122,16 @@ func (s *DomainsService) UpdateDomain(id, userId uint, updates map[string]interf
 		}
 		domain.SSLCert = encrypted
 	}
+
+	// Encrypt SSL key if updated
+	if updates["ssl_key"] != nil {
+		encrypted, err := s.encryptionService.Encrypt(domain.SSLKey, iv)
+		if err != nil {
+			return DomainResponse{}, err
+		}
+		domain.SSLKey = encrypted
+	}
+
 	if err := s.db.Save(&domain).Error; err != nil {
 		return DomainResponse{}, err
 	}
@@ -132,12 +144,13 @@ func (s *DomainsService) UpdateDomain(id, userId uint, updates map[string]interf
 		return DomainResponse{}, err
 	}
 	return DomainResponse{
-		ID:        domain.ID,
-		Name:      domain.Name,
-		SSLCert:   decodedCert,
-		SSLKey:    decodedKey,
-		CreatedAt: domain.CreatedAt,
-		UpdatedAt: domain.UpdatedAt,
+		ID:         domain.ID,
+		Name:       domain.Name,
+		SSLCert:    decodedCert,
+		SSLKey:     decodedKey,
+		SubDomains: domain.SubDomains,
+		CreatedAt:  domain.CreatedAt,
+		UpdatedAt:  domain.UpdatedAt,
 	}, nil
 }
 
