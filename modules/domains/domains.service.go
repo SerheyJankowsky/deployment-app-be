@@ -14,12 +14,13 @@ type DomainsService struct {
 }
 
 type DomainResponse struct {
-	ID        uint      `json:"id"`
-	Name      string    `json:"name"`
-	SSLCert   string    `json:"ssl_cert"`
-	SSLKey    string    `json:"ssl_key"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         uint        `json:"id"`
+	Name       string      `json:"name"`
+	SSLCert    string      `json:"ssl_cert"`
+	SSLKey     string      `json:"ssl_key"`
+	SubDomains []SubDomain `json:"sub_domains"`
+	CreatedAt  time.Time   `json:"created_at"`
+	UpdatedAt  time.Time   `json:"updated_at"`
 }
 
 func NewDomainsService(db *gorm.DB) *DomainsService {
@@ -28,7 +29,7 @@ func NewDomainsService(db *gorm.DB) *DomainsService {
 
 func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, error) {
 	var domains []Domain
-	if err := s.db.Where("user_id = ?", userId).Select("id, name,ssl_cert, ssl_key, created_at, updated_at").Order("created_at DESC").Find(&domains).Error; err != nil {
+	if err := s.db.Where("user_id = ?", userId).Select("id, name,ssl_cert,sub_domains, ssl_key, created_at, updated_at").Order("created_at DESC").Find(&domains).Error; err != nil {
 		return nil, err
 	}
 	result := make([]DomainResponse, len(domains))
@@ -42,12 +43,13 @@ func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, e
 			return nil, err
 		}
 		result[i] = DomainResponse{
-			ID:        domain.ID,
-			Name:      domain.Name,
-			SSLCert:   decodedCert,
-			SSLKey:    decodedKey,
-			CreatedAt: domain.CreatedAt,
-			UpdatedAt: domain.UpdatedAt,
+			ID:         domain.ID,
+			Name:       domain.Name,
+			SSLCert:    decodedCert,
+			SSLKey:     decodedKey,
+			SubDomains: domain.SubDomains,
+			CreatedAt:  domain.CreatedAt,
+			UpdatedAt:  domain.UpdatedAt,
 		}
 	}
 	return result, nil
