@@ -9,6 +9,13 @@ import (
 	"gorm.io/gorm"
 )
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 type DomainsService struct {
 	db                *gorm.DB
 	encryptionService *libs.EncryptionService
@@ -39,24 +46,29 @@ func (s *DomainsService) GetDomains(userId uint, iv string) ([]DomainResponse, e
 
 		// Decrypt SSL certificate only if not empty
 		if domain.SSLCert != "" {
+			fmt.Printf("Original SSL Cert (first 50 chars): %s\n", domain.SSLCert[:min(50, len(domain.SSLCert))])
+			fmt.Printf("IV: %s\n", iv)
 			decoded, err := s.encryptionService.Decrypt(domain.SSLCert, iv)
 			if err != nil {
 				// If decryption fails, return as-is (might be already decrypted)
 				fmt.Println("Decryption failed for SSL cert", err)
 				decodedCert = domain.SSLCert
 			} else {
+				fmt.Printf("Decrypted SSL Cert (first 50 chars): %s\n", decoded[:min(50, len(decoded))])
 				decodedCert = decoded
 			}
 		}
 
 		// Decrypt SSL key only if not empty
 		if domain.SSLKey != "" {
+			fmt.Printf("Original SSL Key (first 50 chars): %s\n", domain.SSLKey[:min(50, len(domain.SSLKey))])
 			decoded, err := s.encryptionService.Decrypt(domain.SSLKey, iv)
 			if err != nil {
 				// If decryption fails, return as-is (might be already decrypted)
 				fmt.Println("Decryption failed for SSL key", err)
 				decodedKey = domain.SSLKey
 			} else {
+				fmt.Printf("Decrypted SSL Key (first 50 chars): %s\n", decoded[:min(50, len(decoded))])
 				decodedKey = decoded
 			}
 		}
@@ -84,22 +96,29 @@ func (s *DomainsService) GetDomain(id, userId uint, iv string) (DomainResponse, 
 
 	// Decrypt SSL certificate only if not empty
 	if domain.SSLCert != "" {
+		fmt.Printf("GetDomain - Original SSL Cert (first 50 chars): %s\n", domain.SSLCert[:min(50, len(domain.SSLCert))])
+		fmt.Printf("GetDomain - IV: %s\n", iv)
 		decoded, err := s.encryptionService.Decrypt(domain.SSLCert, iv)
 		if err != nil {
 			// If decryption fails, return as-is (might be already decrypted)
+			fmt.Println("GetDomain - Decryption failed for SSL cert", err)
 			decodedCert = domain.SSLCert
 		} else {
+			fmt.Printf("GetDomain - Decrypted SSL Cert (first 50 chars): %s\n", decoded[:min(50, len(decoded))])
 			decodedCert = decoded
 		}
 	}
 
 	// Decrypt SSL key only if not empty
 	if domain.SSLKey != "" {
+		fmt.Printf("GetDomain - Original SSL Key (first 50 chars): %s\n", domain.SSLKey[:min(50, len(domain.SSLKey))])
 		decoded, err := s.encryptionService.Decrypt(domain.SSLKey, iv)
 		if err != nil {
 			// If decryption fails, return as-is (might be already decrypted)
+			fmt.Println("GetDomain - Decryption failed for SSL key", err)
 			decodedKey = domain.SSLKey
 		} else {
+			fmt.Printf("GetDomain - Decrypted SSL Key (first 50 chars): %s\n", decoded[:min(50, len(decoded))])
 			decodedKey = decoded
 		}
 	}
