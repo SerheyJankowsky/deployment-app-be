@@ -14,12 +14,13 @@ type ScriptsService struct {
 }
 
 type ScriptResponse struct {
-	ID        uint       `json:"id"`
-	Name      string     `json:"name"`
-	Script    string     `json:"script"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	LastRunAt *time.Time `json:"last_run_at"`
+	ID          uint       `json:"id"`
+	Name        string     `json:"name"`
+	Script      string     `json:"script"`
+	Description string     `json:"description"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	LastRunAt   *time.Time `json:"last_run_at"`
 }
 
 func NewScriptsService(db *gorm.DB) *ScriptsService {
@@ -38,12 +39,13 @@ func (s *ScriptsService) GetScripts(userId uint, iv string) ([]ScriptResponse, e
 			return nil, err
 		}
 		result[i] = ScriptResponse{
-			ID:        script.ID,
-			Name:      script.Name,
-			Script:    decoded,
-			CreatedAt: script.CreatedAt,
-			UpdatedAt: script.UpdatedAt,
-			LastRunAt: script.LastRunAt,
+			ID:          script.ID,
+			Name:        script.Name,
+			Script:      decoded,
+			Description: script.Description,
+			CreatedAt:   script.CreatedAt,
+			UpdatedAt:   script.UpdatedAt,
+			LastRunAt:   script.LastRunAt,
 		}
 	}
 	return result, nil
@@ -59,12 +61,13 @@ func (s *ScriptsService) GetScript(id, userId uint, iv string) (ScriptResponse, 
 		return ScriptResponse{}, err
 	}
 	return ScriptResponse{
-		ID:        script.ID,
-		Name:      script.Name,
-		Script:    decoded,
-		CreatedAt: script.CreatedAt,
-		UpdatedAt: script.UpdatedAt,
-		LastRunAt: script.LastRunAt,
+		ID:          script.ID,
+		Name:        script.Name,
+		Script:      decoded,
+		Description: script.Description,
+		CreatedAt:   script.CreatedAt,
+		UpdatedAt:   script.UpdatedAt,
+		LastRunAt:   script.LastRunAt,
 	}, nil
 }
 
@@ -82,12 +85,13 @@ func (s *ScriptsService) CreateScript(userId uint, dto dto.CreateScriptDto, iv s
 		return ScriptResponse{}, err
 	}
 	return ScriptResponse{
-		ID:        script.ID,
-		Name:      script.Name,
-		Script:    dto.Script,
-		CreatedAt: script.CreatedAt,
-		UpdatedAt: script.UpdatedAt,
-		LastRunAt: script.LastRunAt,
+		ID:          script.ID,
+		Name:        script.Name,
+		Script:      dto.Script,
+		Description: dto.Description,
+		CreatedAt:   script.CreatedAt,
+		UpdatedAt:   script.UpdatedAt,
+		LastRunAt:   script.LastRunAt,
 	}, nil
 }
 
@@ -112,12 +116,13 @@ func (s *ScriptsService) UpdateScript(id, userId uint, updates map[string]interf
 		return ScriptResponse{}, err
 	}
 	return ScriptResponse{
-		ID:        script.ID,
-		Name:      script.Name,
-		Script:    decoded,
-		CreatedAt: script.CreatedAt,
-		UpdatedAt: script.UpdatedAt,
-		LastRunAt: script.LastRunAt,
+		ID:          script.ID,
+		Name:        script.Name,
+		Script:      decoded,
+		Description: script.Description,
+		CreatedAt:   script.CreatedAt,
+		UpdatedAt:   script.UpdatedAt,
+		LastRunAt:   script.LastRunAt,
 	}, nil
 }
 

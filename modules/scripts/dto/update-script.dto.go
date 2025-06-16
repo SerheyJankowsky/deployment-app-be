@@ -3,8 +3,9 @@ package dto
 import "github.com/go-playground/validator/v10"
 
 type UpdateScriptDto struct {
-	Name   *string `json:"name" validate:"omitempty,min=1,max=255"`
-	Script *string `json:"script" validate:"omitempty,min=1,max=10000"`
+	Name        *string `json:"name" validate:"omitempty,min=1,max=255"`
+	Script      *string `json:"script" validate:"omitempty,min=1,max=10000"`
+	Description *string `json:"description" validate:"omitempty,min=1,max=1000"`
 }
 
 func (dto *UpdateScriptDto) GetUpdates() (map[string]interface{}, []string) {
