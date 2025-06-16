@@ -111,29 +111,81 @@ func (s *DeploymentsService) tableExists(tableName string) bool {
 	return err == nil && count > 0
 }
 
-// Helper function to safely create associations
-func (s *DeploymentsService) safeCreateAssociations(deployment *Deployment, dto dto.CreateDeploymentDto) {
-	// Only create associations if the data exists and tables exist
+// Helper function to safely create associations with user validation
+func (s *DeploymentsService) safeCreateAssociations(deployment *Deployment, dto dto.CreateDeploymentDto, userId uint) error {
+	// Only create associations if the data exists and tables exist, with user validation
 
 	if len(dto.Domains) > 0 && s.tableExists("deployment_domains") {
+		// Extract IDs and validate ownership in one query
+		domainIDs := make([]uint, len(dto.Domains))
+		for i, domain := range dto.Domains {
+			domainIDs[i] = domain.ID
+		}
+		var count int64
+		s.db.Model(&domains.Domain{}).Where("id IN ? AND user_id = ?", domainIDs, userId).Count(&count)
+		if count != int64(len(domainIDs)) {
+			return fmt.Errorf("some domains do not belong to this user or do not exist")
+		}
 		s.db.Model(deployment).Association("Domains").Replace(dto.Domains)
 	}
 
 	if len(dto.SubDomains) > 0 && s.tableExists("deployment_subdomains") {
+		// Extract IDs and validate ownership in one query
+		subDomainIDs := make([]uint, len(dto.SubDomains))
+		for i, subdomain := range dto.SubDomains {
+			subDomainIDs[i] = subdomain.ID
+		}
+		var count int64
+		s.db.Model(&domains.SubDomain{}).Where("id IN ? AND user_id = ?", subDomainIDs, userId).Count(&count)
+		if count != int64(len(subDomainIDs)) {
+			return fmt.Errorf("some subdomains do not belong to this user or do not exist")
+		}
 		s.db.Model(deployment).Association("SubDomains").Replace(dto.SubDomains)
 	}
 
 	if len(dto.Containers) > 0 && s.tableExists("deployment_containers") {
+		// Extract IDs and validate ownership in one query
+		containerIDs := make([]uint, len(dto.Containers))
+		for i, container := range dto.Containers {
+			containerIDs[i] = container.ID
+		}
+		var count int64
+		s.db.Model(&containers.Container{}).Where("id IN ? AND user_id = ?", containerIDs, userId).Count(&count)
+		if count != int64(len(containerIDs)) {
+			return fmt.Errorf("some containers do not belong to this user or do not exist")
+		}
 		s.db.Model(deployment).Association("Containers").Replace(dto.Containers)
 	}
 
 	if len(dto.Scripts) > 0 && s.tableExists("deployment_scripts") {
+		// Extract IDs and validate ownership in one query
+		scriptIDs := make([]uint, len(dto.Scripts))
+		for i, script := range dto.Scripts {
+			scriptIDs[i] = script.ID
+		}
+		var count int64
+		s.db.Model(&scripts.Script{}).Where("id IN ? AND user_id = ?", scriptIDs, userId).Count(&count)
+		if count != int64(len(scriptIDs)) {
+			return fmt.Errorf("some scripts do not belong to this user or do not exist")
+		}
 		s.db.Model(deployment).Association("Scripts").Replace(dto.Scripts)
 	}
 
 	if len(dto.Secrets) > 0 && s.tableExists("deployment_secrets") {
+		// Extract IDs and validate ownership in one query
+		secretIDs := make([]uint, len(dto.Secrets))
+		for i, secret := range dto.Secrets {
+			secretIDs[i] = secret.ID
+		}
+		var count int64
+		s.db.Model(&secrets.Secret{}).Where("id IN ? AND user_id = ?", secretIDs, userId).Count(&count)
+		if count != int64(len(secretIDs)) {
+			return fmt.Errorf("some secrets do not belong to this user or do not exist")
+		}
 		s.db.Model(deployment).Association("Secrets").Replace(dto.Secrets)
 	}
+
+	return nil
 }
 
 // Helper function to safely create associations from IDs with user validation
@@ -207,13 +259,15 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 
 	if d, ok := updates["domains"]; ok {
 		if domainList, ok := d.([]domains.Domain); ok && s.tableExists("deployment_domains") {
-			// Validate that all domains belong to the user
-			for _, domain := range domainList {
-				var count int64
-				s.db.Model(&domains.Domain{}).Where("id = ? AND user_id = ?", domain.ID, userId).Count(&count)
-				if count == 0 {
-					return fmt.Errorf("domain with ID %d does not belong to this user", domain.ID)
-				}
+			// Extract IDs and validate ownership in one query
+			domainIDs := make([]uint, len(domainList))
+			for i, domain := range domainList {
+				domainIDs[i] = domain.ID
+			}
+			var count int64
+			s.db.Model(&domains.Domain{}).Where("id IN ? AND user_id = ?", domainIDs, userId).Count(&count)
+			if count != int64(len(domainIDs)) {
+				return fmt.Errorf("some domains do not belong to this user or do not exist")
 			}
 			s.db.Model(deployment).Association("Domains").Replace(domainList)
 		}
@@ -222,13 +276,15 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 
 	if subDomains, ok := updates["sub_domains"]; ok {
 		if subDomainList, ok := subDomains.([]domains.SubDomain); ok && s.tableExists("deployment_subdomains") {
-			// Validate that all subdomains belong to the user
-			for _, subdomain := range subDomainList {
-				var count int64
-				s.db.Model(&domains.SubDomain{}).Where("id = ? AND user_id = ?", subdomain.ID, userId).Count(&count)
-				if count == 0 {
-					return fmt.Errorf("subdomain with ID %d does not belong to this user", subdomain.ID)
-				}
+			// Extract IDs and validate ownership in one query
+			subDomainIDs := make([]uint, len(subDomainList))
+			for i, subdomain := range subDomainList {
+				subDomainIDs[i] = subdomain.ID
+			}
+			var count int64
+			s.db.Model(&domains.SubDomain{}).Where("id IN ? AND user_id = ?", subDomainIDs, userId).Count(&count)
+			if count != int64(len(subDomainIDs)) {
+				return fmt.Errorf("some subdomains do not belong to this user or do not exist")
 			}
 			s.db.Model(deployment).Association("SubDomains").Replace(subDomainList)
 		}
@@ -237,13 +293,15 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 
 	if c, ok := updates["containers"]; ok {
 		if containerList, ok := c.([]containers.Container); ok && s.tableExists("deployment_containers") {
-			// Validate that all containers belong to the user
-			for _, container := range containerList {
-				var count int64
-				s.db.Model(&containers.Container{}).Where("id = ? AND user_id = ?", container.ID, userId).Count(&count)
-				if count == 0 {
-					return fmt.Errorf("container with ID %d does not belong to this user", container.ID)
-				}
+			// Extract IDs and validate ownership in one query
+			containerIDs := make([]uint, len(containerList))
+			for i, container := range containerList {
+				containerIDs[i] = container.ID
+			}
+			var count int64
+			s.db.Model(&containers.Container{}).Where("id IN ? AND user_id = ?", containerIDs, userId).Count(&count)
+			if count != int64(len(containerIDs)) {
+				return fmt.Errorf("some containers do not belong to this user or do not exist")
 			}
 			s.db.Model(deployment).Association("Containers").Replace(containerList)
 		}
@@ -252,13 +310,15 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 
 	if sc, ok := updates["scripts"]; ok {
 		if scriptList, ok := sc.([]scripts.Script); ok && s.tableExists("deployment_scripts") {
-			// Validate that all scripts belong to the user
-			for _, script := range scriptList {
-				var count int64
-				s.db.Model(&scripts.Script{}).Where("id = ? AND user_id = ?", script.ID, userId).Count(&count)
-				if count == 0 {
-					return fmt.Errorf("script with ID %d does not belong to this user", script.ID)
-				}
+			// Extract IDs and validate ownership in one query
+			scriptIDs := make([]uint, len(scriptList))
+			for i, script := range scriptList {
+				scriptIDs[i] = script.ID
+			}
+			var count int64
+			s.db.Model(&scripts.Script{}).Where("id IN ? AND user_id = ?", scriptIDs, userId).Count(&count)
+			if count != int64(len(scriptIDs)) {
+				return fmt.Errorf("some scripts do not belong to this user or do not exist")
 			}
 			s.db.Model(deployment).Association("Scripts").Replace(scriptList)
 		}
@@ -267,13 +327,15 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 
 	if se, ok := updates["secrets"]; ok {
 		if secretList, ok := se.([]secrets.Secret); ok && s.tableExists("deployment_secrets") {
-			// Validate that all secrets belong to the user
-			for _, secret := range secretList {
-				var count int64
-				s.db.Model(&secrets.Secret{}).Where("id = ? AND user_id = ?", secret.ID, userId).Count(&count)
-				if count == 0 {
-					return fmt.Errorf("secret with ID %d does not belong to this user", secret.ID)
-				}
+			// Extract IDs and validate ownership in one query
+			secretIDs := make([]uint, len(secretList))
+			for i, secret := range secretList {
+				secretIDs[i] = secret.ID
+			}
+			var count int64
+			s.db.Model(&secrets.Secret{}).Where("id IN ? AND user_id = ?", secretIDs, userId).Count(&count)
+			if count != int64(len(secretIDs)) {
+				return fmt.Errorf("some secrets do not belong to this user or do not exist")
 			}
 			s.db.Model(deployment).Association("Secrets").Replace(secretList)
 		}
@@ -479,8 +541,12 @@ func (s *DeploymentsService) CreateDeployment(userId uint, dto dto.CreateDeploym
 			return DeploymentResponse{}, err
 		}
 	} else if dto.UseFullObjects() {
-		// Use full objects directly
-		s.safeCreateAssociations(&deployment, dto)
+		// Use full objects directly with user validation
+		if err := s.safeCreateAssociations(&deployment, dto, userId); err != nil {
+			// Delete the created deployment if association fails
+			s.db.Delete(&deployment)
+			return DeploymentResponse{}, err
+		}
 	}
 
 	// Try to preload relations safely
