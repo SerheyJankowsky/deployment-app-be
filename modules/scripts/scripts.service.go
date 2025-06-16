@@ -29,7 +29,7 @@ func NewScriptsService(db *gorm.DB) *ScriptsService {
 
 func (s *ScriptsService) GetScripts(userId uint, iv string) ([]ScriptResponse, error) {
 	var scripts []Script
-	if err := s.db.Where("user_id = ?", userId).Select("id, name, script, created_at, updated_at").Order("created_at DESC").Find(&scripts).Error; err != nil {
+	if err := s.db.Where("user_id = ?", userId).Select("id, name, script, description, created_at, updated_at").Order("created_at DESC").Find(&scripts).Error; err != nil {
 		return nil, err
 	}
 	result := make([]ScriptResponse, len(scripts))
