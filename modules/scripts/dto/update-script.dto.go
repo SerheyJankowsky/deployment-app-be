@@ -19,6 +19,10 @@ func (dto *UpdateScriptDto) GetUpdates() (map[string]interface{}, []string) {
 		updates["script"] = *dto.Script
 		fields = append(fields, "script")
 	}
+	if dto.Description != nil {
+		updates["description"] = *dto.Description
+		fields = append(fields, "description")
+	}
 	return updates, fields
 }
 
