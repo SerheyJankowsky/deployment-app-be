@@ -109,6 +109,12 @@ func (s *ScriptsService) UpdateScript(id, userId uint, updates map[string]interf
 		}
 		script.Script = encrypted
 	}
+	if updates["description"] != nil {
+		script.Description = updates["description"].(string)
+	}
+	if updates["name"] != nil {
+		script.Name = updates["name"].(string)
+	}
 	if err := s.db.Save(&script).Error; err != nil {
 		return ScriptResponse{}, err
 	}
