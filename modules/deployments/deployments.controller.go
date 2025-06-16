@@ -38,11 +38,7 @@ func (c *DeploymentsController) GetDeployments(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"data":    deployments,
-		"count":   len(deployments),
-		"message": "Deployments retrieved successfully",
-	})
+	return ctx.Status(fiber.StatusOK).JSON(deployments)
 }
 
 func (c *DeploymentsController) GetDeployment(ctx *fiber.Ctx) error {
@@ -76,10 +72,7 @@ func (c *DeploymentsController) GetDeployment(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"data":    deployment,
-		"message": "Deployment retrieved successfully",
-	})
+	return ctx.Status(fiber.StatusOK).JSON(deployment)
 }
 
 func (c *DeploymentsController) CreateDeployment(ctx *fiber.Ctx) error {
@@ -117,10 +110,7 @@ func (c *DeploymentsController) CreateDeployment(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"data":    deployment,
-		"message": "Deployment created successfully",
-	})
+	return ctx.Status(fiber.StatusCreated).JSON(deployment)
 }
 
 func (c *DeploymentsController) UpdateDeployment(ctx *fiber.Ctx) error {
@@ -194,10 +184,7 @@ func (c *DeploymentsController) UpdateDeployment(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"data":    deployment,
-		"message": "Deployment updated successfully",
-	})
+	return ctx.Status(fiber.StatusOK).JSON(deployment)
 }
 
 func (c *DeploymentsController) DeleteDeployment(ctx *fiber.Ctx) error {
