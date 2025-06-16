@@ -77,9 +77,10 @@ func (s *ScriptsService) CreateScript(userId uint, dto dto.CreateScriptDto, iv s
 		return ScriptResponse{}, err
 	}
 	script := Script{
-		Name:   dto.Name,
-		Script: encrypted,
-		UserID: userId,
+		Name:        dto.Name,
+		Script:      encrypted,
+		Description: dto.Description,
+		UserID:      userId,
 	}
 	if err := s.db.Create(&script).Error; err != nil {
 		return ScriptResponse{}, err
@@ -107,6 +108,9 @@ func (s *ScriptsService) UpdateScript(id, userId uint, updates map[string]interf
 			return ScriptResponse{}, err
 		}
 		script.Script = encrypted
+	}
+	if updates["description"] != nil {
+		script.Description = updates["description"].(string)
 	}
 	if err := s.db.Save(&script).Error; err != nil {
 		return ScriptResponse{}, err
