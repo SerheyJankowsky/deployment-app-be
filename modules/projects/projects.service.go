@@ -105,19 +105,30 @@ func (s *ProjectsService) GetProject(id, userId uint) (ProjectResponse, error) {
 	}, nil
 }
 
-// validateUserDeployments checks that all deployment IDs belong to the user
+// validateUserDeployments checks that all deployment IDs exist and belong to the user
 func (s *ProjectsService) validateUserDeployments(deploymentIDs []uint, userId uint) error {
 	if len(deploymentIDs) == 0 {
 		return nil
 	}
 
-	var count int64
-	if err := s.db.Table("deployments").Where("id IN ? AND user_id = ?", deploymentIDs, userId).Count(&count).Error; err != nil {
+	// First check if all deployments exist
+	var existingCount int64
+	if err := s.db.Table("deployments").Where("id IN ?", deploymentIDs).Count(&existingCount).Error; err != nil {
 		return err
 	}
 
-	if int(count) != len(deploymentIDs) {
-		return errors.New("some deployments do not belong to this user or do not exist")
+	if int(existingCount) != len(deploymentIDs) {
+		return errors.New("some deployment IDs do not exist")
+	}
+
+	// Then check if all existing deployments belong to the user
+	var userCount int64
+	if err := s.db.Table("deployments").Where("id IN ? AND user_id = ?", deploymentIDs, userId).Count(&userCount).Error; err != nil {
+		return err
+	}
+
+	if int(userCount) != len(deploymentIDs) {
+		return errors.New("some deployments do not belong to this user")
 	}
 
 	return nil
