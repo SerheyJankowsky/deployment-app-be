@@ -14,30 +14,30 @@ import (
 )
 
 type UpdateDeploymentDto struct {
-	Name                  *string `json:"name" validate:"omitempty,min=1,max=255" db:"name"`
-	SetUpDomains          *bool   `json:"setup_domains" db:"setup_domains"`
-	PoolContainers        *bool   `json:"pool_containers" db:"pool_containers"`
-	RunContainers         *bool   `json:"run_containers" db:"run_containers"`
-	SetUpServers          *bool   `json:"setup_servers" db:"setup_servers"`
-	SetSecretsToServer    *bool   `json:"set_secrets_to_server" db:"set_secrets_to_server"`
-	SetSecretsToContainer *bool   `json:"set_secrets_to_container" db:"set_secrets_to_container"`
-	RunScripts            *bool   `json:"run_scripts" db:"run_scripts"`
+	Name                  *string `json:"name" validate:"omitempty,min=1,max=255" db:"Name"`
+	SetUpDomains          *bool   `json:"setup_domains" db:"SetUpDomains"`
+	PoolContainers        *bool   `json:"pool_containers" db:"PoolContainers"`
+	RunContainers         *bool   `json:"run_containers" db:"RunContainers"`
+	SetUpServers          *bool   `json:"setup_servers" db:"SetUpServers"`
+	SetSecretsToServer    *bool   `json:"set_secrets_to_server" db:"SetSecretsToServer"`
+	SetSecretsToContainer *bool   `json:"set_secrets_to_container" db:"SetSecretsToContainer"`
+	RunScripts            *bool   `json:"run_scripts" db:"RunScripts"`
 
 	// Fixed validation tags - removed 'min=1' from complex structs
-	Domains    []domains.Domain       `json:"domains" validate:"omitempty,dive" db:"domains"`
-	SubDomains []domains.SubDomain    `json:"sub_domains" validate:"omitempty,dive" db:"sub_domains"`
-	Containers []containers.Container `json:"containers" validate:"omitempty,dive" db:"containers"`
-	Servers    []servers.Server       `json:"servers" validate:"omitempty,dive" db:"servers"` // Commented out
-	Scripts    []scripts.Script       `json:"scripts" validate:"omitempty,dive" db:"scripts"`
-	Secrets    []secrets.Secret       `json:"secrets" validate:"omitempty,dive" db:"secrets"`
+	Domains    []domains.Domain       `json:"domains" validate:"omitempty,dive" db:"Domains"`
+	SubDomains []domains.SubDomain    `json:"sub_domains" validate:"omitempty,dive" db:"SubDomains"`
+	Containers []containers.Container `json:"containers" validate:"omitempty,dive" db:"Containers"`
+	Servers    []servers.Server       `json:"servers" validate:"omitempty,dive" db:"Servers"` // Commented out
+	Scripts    []scripts.Script       `json:"scripts" validate:"omitempty,dive" db:"Scripts"`
+	Secrets    []secrets.Secret       `json:"secrets" validate:"omitempty,dive" db:"Secrets"`
 
 	// Alternative: Use IDs instead of full objects for relationships
-	DomainIDs    []uint `json:"domain_ids" validate:"omitempty,dive,min=1" db:"domain_ids"`
-	SubDomainIDs []uint `json:"subdomain_ids" validate:"omitempty,dive,min=1" db:"subdomain_ids"`
-	ContainerIDs []uint `json:"container_ids" validate:"omitempty,dive,min=1" db:"container_ids"`
-	ServerIDs    []uint `json:"server_ids" validate:"omitempty,dive,min=1" db:"server_ids"` // Commented out
-	ScriptIDs    []uint `json:"script_ids" validate:"omitempty,dive,min=1" db:"script_ids"`
-	SecretIDs    []uint `json:"secret_ids" validate:"omitempty,dive,min=1" db:"secret_ids"`
+	DomainIDs    []uint `json:"domain_ids" validate:"omitempty,dive,min=1" db:"DomainIDs"`
+	SubDomainIDs []uint `json:"subdomain_ids" validate:"omitempty,dive,min=1" db:"SubDomainIDs"`
+	ContainerIDs []uint `json:"container_ids" validate:"omitempty,dive,min=1" db:"ContainerIDs"`
+	ServerIDs    []uint `json:"server_ids" validate:"omitempty,dive,min=1" db:"ServerIDs"` // Commented out
+	ScriptIDs    []uint `json:"script_ids" validate:"omitempty,dive,min=1" db:"ScriptIDs"`
+	SecretIDs    []uint `json:"secret_ids" validate:"omitempty,dive,min=1" db:"SecretIDs"`
 }
 
 func (dto *UpdateDeploymentDto) GetUpdates() (map[string]interface{}, []string) {
