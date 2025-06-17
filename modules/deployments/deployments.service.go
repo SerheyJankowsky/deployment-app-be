@@ -290,7 +290,7 @@ func (s *DeploymentsService) safeCreateAssociationsFromIDs(deployment *Deploymen
 func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, updates map[string]interface{}, userId uint) error {
 	// Handle many-to-many associations separately (only if tables exist) with user validation
 
-	if d, ok := updates["domains"]; ok {
+	if d, ok := updates["Domains"]; ok {
 		if domainList, ok := d.([]domains.Domain); ok && s.tableExists("deployment_domains") {
 			// Extract IDs and validate ownership in one query
 			domainIDs := make([]uint, len(domainList))
@@ -304,10 +304,10 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 			}
 			s.db.Model(deployment).Association("Domains").Replace(domainList)
 		}
-		delete(updates, "domains")
+		delete(updates, "Domains")
 	}
 
-	if subDomains, ok := updates["sub_domains"]; ok {
+	if subDomains, ok := updates["SubDomains"]; ok {
 		if subDomainList, ok := subDomains.([]domains.SubDomain); ok && s.tableExists("deployment_subdomains") {
 			// Extract IDs and validate ownership in one query
 			subDomainIDs := make([]uint, len(subDomainList))
@@ -321,10 +321,10 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 			}
 			s.db.Model(deployment).Association("SubDomains").Replace(subDomainList)
 		}
-		delete(updates, "sub_domains")
+		delete(updates, "SubDomains")
 	}
 
-	if c, ok := updates["containers"]; ok {
+	if c, ok := updates["Containers"]; ok {
 		if containerList, ok := c.([]containers.Container); ok && s.tableExists("deployment_containers") {
 			// Extract IDs and validate ownership in one query
 			containerIDs := make([]uint, len(containerList))
@@ -338,10 +338,10 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 			}
 			s.db.Model(deployment).Association("Containers").Replace(containerList)
 		}
-		delete(updates, "containers")
+		delete(updates, "Containers")
 	}
 
-	if srv, ok := updates["servers"]; ok {
+	if srv, ok := updates["Servers"]; ok {
 		if serverList, ok := srv.([]servers.Server); ok && s.tableExists("deployment_servers") {
 			// Extract IDs and validate ownership in one query
 			serverIDs := make([]uint, len(serverList))
@@ -355,10 +355,10 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 			}
 			s.db.Model(deployment).Association("Servers").Replace(serverList)
 		}
-		delete(updates, "servers")
+		delete(updates, "Servers")
 	}
 
-	if sc, ok := updates["scripts"]; ok {
+	if sc, ok := updates["Scripts"]; ok {
 		if scriptList, ok := sc.([]scripts.Script); ok && s.tableExists("deployment_scripts") {
 			// Extract IDs and validate ownership in one query
 			scriptIDs := make([]uint, len(scriptList))
@@ -372,10 +372,10 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 			}
 			s.db.Model(deployment).Association("Scripts").Replace(scriptList)
 		}
-		delete(updates, "scripts")
+		delete(updates, "Scripts")
 	}
 
-	if se, ok := updates["secrets"]; ok {
+	if se, ok := updates["Secrets"]; ok {
 		if secretList, ok := se.([]secrets.Secret); ok && s.tableExists("deployment_secrets") {
 			// Extract IDs and validate ownership in one query
 			secretIDs := make([]uint, len(secretList))
@@ -389,7 +389,7 @@ func (s *DeploymentsService) safeUpdateAssociations(deployment *Deployment, upda
 			}
 			s.db.Model(deployment).Association("Secrets").Replace(secretList)
 		}
-		delete(updates, "secrets")
+		delete(updates, "Secrets")
 	}
 
 	return nil
