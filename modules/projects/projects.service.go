@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"errors"
 	"time"
 
 	"deployer.com/modules/projects/dto"
@@ -104,7 +105,37 @@ func (s *ProjectsService) GetProject(id, userId uint) (ProjectResponse, error) {
 	}, nil
 }
 
+// validateUserDeployments checks that all deployment IDs belong to the user
+func (s *ProjectsService) validateUserDeployments(deploymentIDs []uint, userId uint) error {
+	if len(deploymentIDs) == 0 {
+		return nil
+	}
+
+	var count int64
+	if err := s.db.Table("deployments").Where("id IN ? AND user_id = ?", deploymentIDs, userId).Count(&count).Error; err != nil {
+		return err
+	}
+
+	if int(count) != len(deploymentIDs) {
+		return errors.New("some deployments do not belong to this user or do not exist")
+	}
+
+	return nil
+}
+
 func (s *ProjectsService) CreateProject(userId uint, createDto dto.CreateProjectDto) (ProjectResponse, error) {
+	// Validate that all deployments belong to the user
+	if len(createDto.ProjectDeployments) > 0 {
+		deploymentIDs := make([]uint, len(createDto.ProjectDeployments))
+		for i, pd := range createDto.ProjectDeployments {
+			deploymentIDs[i] = pd.DeploymentID
+		}
+
+		if err := s.validateUserDeployments(deploymentIDs, userId); err != nil {
+			return ProjectResponse{}, err
+		}
+	}
+
 	// Start a transaction
 	tx := s.db.Begin()
 	if tx.Error != nil {
@@ -179,6 +210,18 @@ func (s *ProjectsService) UpdateProject(id, userId uint, updates map[string]inte
 	// Handle project deployments update if provided
 	if projectDeployments, exists := updates["project_deployments"]; exists {
 		if deployments, ok := projectDeployments.([]dto.ProjectDeployments); ok {
+			// Validate that all deployments belong to the user
+			if len(deployments) > 0 {
+				deploymentIDs := make([]uint, len(deployments))
+				for i, pd := range deployments {
+					deploymentIDs[i] = pd.DeploymentID
+				}
+
+				if err := s.validateUserDeployments(deploymentIDs, userId); err != nil {
+					return ProjectResponse{}, err
+				}
+			}
+
 			// Start transaction for updating deployments
 			tx := s.db.Begin()
 			if tx.Error != nil {
