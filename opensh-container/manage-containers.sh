@@ -92,7 +92,8 @@ calculate_optimal_containers() {
     log_info "Вычисление оптимального количества контейнеров..."
     
     # Вычисляем максимальное количество контейнеров по CPU
-    CPU_CONTAINER_LIMIT=$(echo "$AVAILABLE_CPU_CORES / $CONTAINER_CPU_LIMIT" | bc)
+    # Используем awk для работы с дробными числами
+    CPU_CONTAINER_LIMIT=$(awk "BEGIN {printf \"%.0f\", $AVAILABLE_CPU_CORES / $CONTAINER_CPU_LIMIT}")
     
     # Вычисляем максимальное количество контейнеров по памяти
     CONTAINER_MEMORY_MB=$(echo $CONTAINER_MEMORY_LIMIT | sed 's/[^0-9]//g')
