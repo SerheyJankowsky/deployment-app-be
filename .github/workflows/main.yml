@@ -64,9 +64,16 @@ jobs:
       - name: Install sshpass
         run: sudo apt-get install -y sshpass
 
-      - name: Deploy to Server
+      - name: Copy opensh-container files to server
         run: |
-          echo "Starting deployment to ${{ secrets.HOST }}..."
-          sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "cp ./opensh-container opensh-container"
-          sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "chmod +x ./opensh-container/run-container.sh"
-          sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "./opensh-container/run-container.sh"
+          echo "Copying opensh-container directory to server..."
+          sshpass -p "${{ secrets.HOST_PASSWORD }}" scp -o StrictHostKeyChecking=no -r ./opensh-container ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }}:~/
+
+      - name: Deploy containers on server
+        run: |
+          echo "Starting container deployment on ${{ secrets.HOST }}..."
+          sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "
+            cd ~/opensh-container &&
+            chmod +x *.sh &&
+            ./manage-containers.sh auto
+          "
