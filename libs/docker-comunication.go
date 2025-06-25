@@ -129,7 +129,7 @@ func (dc *DockerComunication) isCacheExpired() bool {
 	return time.Since(dc.lastCacheUpdate) > dc.cacheExpiration
 }
 
-// ListDeploymentWorkerContainers получает список контейнеров с именем deployment-worker
+// ListDeploymentWorkerContainers получает список контейнеров с именем deploy-worker
 func (dc *DockerComunication) ListDeploymentWorkerContainers(ctx context.Context, all bool) ([]Container, error) {
 	fmt.Printf("DEBUG: Starting to list containers (all=%v)\n", all)
 
@@ -150,9 +150,9 @@ func (dc *DockerComunication) ListDeploymentWorkerContainers(ctx context.Context
 		fmt.Printf("DEBUG: Container [%d]: ID=%s, Name='%s', Image=%s, Status=%s\n",
 			i+1, c.ID[:12], name, c.Image, c.Status)
 
-		// Фильтруем только контейнеры с именем deployment-worker
-		if name == "deployment-worker" || strings.Contains(name, "deployment-worker") {
-			fmt.Printf("DEBUG: ✓ Container '%s' matches deployment-worker filter\n", name)
+		// Фильтруем только контейнеры с именем deploy-worker
+		if name == "deploy-worker" || strings.Contains(name, "deploy-worker") {
+			fmt.Printf("DEBUG: ✓ Container '%s' matches deploy-worker filter\n", name)
 			result = append(result, Container{
 				ID:        c.ID[:12], // короткий ID
 				Name:      name,
@@ -160,11 +160,11 @@ func (dc *DockerComunication) ListDeploymentWorkerContainers(ctx context.Context
 				CreatedAt: time.Unix(c.Created, 0).Format(time.RFC3339),
 			})
 		} else {
-			fmt.Printf("DEBUG: ✗ Container '%s' does not match deployment-worker filter\n", name)
+			fmt.Printf("DEBUG: ✗ Container '%s' does not match deploy-worker filter\n", name)
 		}
 	}
 
-	fmt.Printf("DEBUG: Found %d deployment-worker containers\n", len(result))
+	fmt.Printf("DEBUG: Found %d deploy-worker containers\n", len(result))
 
 	// Обновляем кэш
 	dc.updateDeploymentWorkerCache(result)
@@ -172,7 +172,7 @@ func (dc *DockerComunication) ListDeploymentWorkerContainers(ctx context.Context
 	return result, nil
 }
 
-// updateDeploymentWorkerCache обновляет кэш deployment-worker контейнеров
+// updateDeploymentWorkerCache обновляет кэш deploy-worker контейнеров
 func (dc *DockerComunication) updateDeploymentWorkerCache(containers []Container) {
 	dc.deploymentWorkerMutex.Lock()
 	defer dc.deploymentWorkerMutex.Unlock()
@@ -181,7 +181,7 @@ func (dc *DockerComunication) updateDeploymentWorkerCache(containers []Container
 	dc.lastCacheUpdate = time.Now()
 }
 
-// GetCachedDeploymentWorkers возвращает кэшированные deployment-worker контейнеры
+// GetCachedDeploymentWorkers возвращает кэшированные deploy-worker контейнеры
 func (dc *DockerComunication) GetCachedDeploymentWorkers() []Container {
 	dc.deploymentWorkerMutex.RLock()
 	defer dc.deploymentWorkerMutex.RUnlock()
@@ -193,7 +193,7 @@ func (dc *DockerComunication) GetCachedDeploymentWorkers() []Container {
 	return result
 }
 
-// GetDeploymentWorkersWithCache возвращает deployment-worker контейнеры из кэша или обновляет кэш
+// GetDeploymentWorkersWithCache возвращает deploy-worker контейнеры из кэша или обновляет кэш
 func (dc *DockerComunication) GetDeploymentWorkersWithCache(ctx context.Context, forceRefresh bool) ([]Container, error) {
 	// Если кэш не истек и не требуется принудительное обновление, возвращаем из кэша
 	if !forceRefresh && !dc.isCacheExpired() {
@@ -213,7 +213,7 @@ func (dc *DockerComunication) RefreshDeploymentWorkersCache(ctx context.Context)
 	return err
 }
 
-// GetDeploymentWorkerByName находит deployment-worker контейнер по имени в кэше
+// GetDeploymentWorkerByName находит deploy-worker контейнер по имени в кэше
 func (dc *DockerComunication) GetDeploymentWorkerByName(name string) *Container {
 	dc.deploymentWorkerMutex.RLock()
 	defer dc.deploymentWorkerMutex.RUnlock()
@@ -227,7 +227,7 @@ func (dc *DockerComunication) GetDeploymentWorkerByName(name string) *Container 
 	return nil
 }
 
-// GetDeploymentWorkerByID находит deployment-worker контейнер по ID в кэше
+// GetDeploymentWorkerByID находит deploy-worker контейнер по ID в кэше
 func (dc *DockerComunication) GetDeploymentWorkerByID(id string) *Container {
 	dc.deploymentWorkerMutex.RLock()
 	defer dc.deploymentWorkerMutex.RUnlock()
@@ -267,7 +267,7 @@ func (dc *DockerComunication) StartAutoRefresh(ctx context.Context, interval tim
 				return
 			case <-ticker.C:
 				if err := dc.RefreshDeploymentWorkersCache(ctx); err != nil {
-					fmt.Printf("Error refreshing deployment-worker cache: %v\n", err)
+					fmt.Printf("Error refreshing deploy-worker cache: %v\n", err)
 				}
 			}
 		}
@@ -456,7 +456,7 @@ func (dc *DockerComunication) MonitorContainer(ctx context.Context, containerID 
 	}()
 }
 
-// MonitorDeploymentWorkers запускает мониторинг всех deployment-worker контейнеров используя кэш
+// MonitorDeploymentWorkers запускает мониторинг всех deploy-worker контейнеров используя кэш
 func (dc *DockerComunication) MonitorDeploymentWorkers(ctx context.Context, interval time.Duration, callback func(string, *ContainerStats)) {
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -470,7 +470,7 @@ func (dc *DockerComunication) MonitorDeploymentWorkers(ctx context.Context, inte
 				// Используем кэш для получения списка контейнеров
 				containers, err := dc.GetDeploymentWorkersWithCache(ctx, false)
 				if err != nil {
-					fmt.Printf("Error getting deployment-worker containers: %v\n", err)
+					fmt.Printf("Error getting deploy-worker containers: %v\n", err)
 					continue
 				}
 
