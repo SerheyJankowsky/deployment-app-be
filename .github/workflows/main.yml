@@ -66,10 +66,7 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          # chmod +x ./opensh-container/run-container.sh
-          echo "Logging into Docker registry on server..."
-          sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
-          # echo "Starting deployment to ${{ secrets.HOST }}..."
+          echo "Starting deployment to ${{ secrets.HOST }}..."
           sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "cp ./opensh-container opensh-container"
           sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "chmod +x ./opensh-container/run-container.sh"
           sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "./opensh-container/run-container.sh"
