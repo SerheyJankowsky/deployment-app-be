@@ -12,7 +12,7 @@ DOCKERFILE_PATH="./Dockerfile"
 NETWORK_NAME="deployment-network"
 
 # Ресурсы (можно настроить)
-RESERVED_CPU_CORES=2          # Резерв для основного приложения
+RESERVED_CPU_CORES=1          # Резерв для основного приложения
 RESERVED_MEMORY_GB=2          # Резерв памяти для основного приложения
 CONTAINER_CPU_LIMIT="0.5"     # CPU лимит на один контейнер
 CONTAINER_MEMORY_LIMIT="512m" # Память на один контейнер
