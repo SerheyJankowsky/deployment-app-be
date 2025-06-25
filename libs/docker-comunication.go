@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -41,10 +42,43 @@ type DockerComunication struct {
 
 // NewDockerCommunication создает новый экземпляр Docker клиента
 func NewDockerCommunication() (*DockerComunication, error) {
+	fmt.Println("DEBUG: Creating Docker client...")
+
+	// Выводим информацию о Docker окружении
+	fmt.Printf("DEBUG: DOCKER_HOST=%s\n", os.Getenv("DOCKER_HOST"))
+	fmt.Printf("DEBUG: DOCKER_API_VERSION=%s\n", os.Getenv("DOCKER_API_VERSION"))
+	fmt.Printf("DEBUG: DOCKER_CERT_PATH=%s\n", os.Getenv("DOCKER_CERT_PATH"))
+	fmt.Printf("DEBUG: DOCKER_TLS_VERIFY=%s\n", os.Getenv("DOCKER_TLS_VERIFY"))
+
+	// Сначала пробуем стандартное подключение
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Docker client: %w", err)
+		fmt.Printf("DEBUG: Failed to create Docker client with FromEnv: %v\n", err)
+
+		// Пробуем подключиться через Unix socket (для контейнеров)
+		fmt.Println("DEBUG: Trying to connect via Unix socket...")
+		cli, err = client.NewClientWithOpts(
+			client.WithHost("unix:///var/run/docker.sock"),
+			client.WithAPIVersionNegotiation(),
+		)
+		if err != nil {
+			fmt.Printf("DEBUG: Failed to create Docker client with Unix socket: %v\n", err)
+			return nil, fmt.Errorf("failed to create Docker client: %w", err)
+		}
 	}
+
+	fmt.Println("DEBUG: Docker client created successfully")
+
+	// Проверяем подключение
+	ctx := context.Background()
+	version, err := cli.ServerVersion(ctx)
+	if err != nil {
+		fmt.Printf("DEBUG: Failed to get Docker server version: %v\n", err)
+		return nil, fmt.Errorf("failed to connect to Docker daemon: %w", err)
+	}
+
+	fmt.Printf("DEBUG: Connected to Docker daemon - Version: %s, API Version: %s\n",
+		version.Version, version.APIVersion)
 
 	return &DockerComunication{
 		client:          cli,
@@ -97,28 +131,40 @@ func (dc *DockerComunication) isCacheExpired() bool {
 
 // ListDeploymentWorkerContainers получает список контейнеров с именем deployment-worker
 func (dc *DockerComunication) ListDeploymentWorkerContainers(ctx context.Context, all bool) ([]Container, error) {
+	fmt.Printf("DEBUG: Starting to list containers (all=%v)\n", all)
+
 	containers, err := dc.client.ContainerList(ctx, container.ListOptions{All: all})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list containers: %w", err)
 	}
 
+	fmt.Printf("DEBUG: Found %d total containers\n", len(containers))
+
 	var result []Container
-	for _, c := range containers {
+	for i, c := range containers {
 		name := ""
 		if len(c.Names) > 0 {
 			name = strings.TrimPrefix(c.Names[0], "/") // убираем префикс "/"
 		}
 
+		fmt.Printf("DEBUG: Container [%d]: ID=%s, Name='%s', Image=%s, Status=%s\n",
+			i+1, c.ID[:12], name, c.Image, c.Status)
+
 		// Фильтруем только контейнеры с именем deployment-worker
 		if name == "deployment-worker" || strings.Contains(name, "deployment-worker") {
+			fmt.Printf("DEBUG: ✓ Container '%s' matches deployment-worker filter\n", name)
 			result = append(result, Container{
 				ID:        c.ID[:12], // короткий ID
 				Name:      name,
 				Status:    c.Status,
 				CreatedAt: time.Unix(c.Created, 0).Format(time.RFC3339),
 			})
+		} else {
+			fmt.Printf("DEBUG: ✗ Container '%s' does not match deployment-worker filter\n", name)
 		}
 	}
+
+	fmt.Printf("DEBUG: Found %d deployment-worker containers\n", len(result))
 
 	// Обновляем кэш
 	dc.updateDeploymentWorkerCache(result)

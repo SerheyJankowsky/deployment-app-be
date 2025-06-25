@@ -72,6 +72,61 @@ Set the following environment variable:
    docker run -e DATABASE_URL=... -p 8080:8080 deployment-app
    ```
 
+## Running in Docker Container
+
+When running this application inside a Docker container, you need to mount the Docker socket to allow the application to communicate with the Docker daemon on the host.
+
+### Docker Run Command
+
+```bash
+docker run -d \
+  --name deployment-app-be \
+  -p 8080:8080 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  your-image-name
+```
+
+### Docker Compose
+
+```yaml
+version: "3.8"
+services:
+  deployment-app-be:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+```
+
+### Important Notes
+
+- The `-v /var/run/docker.sock:/var/run/docker.sock` volume mount gives the container access to the Docker daemon
+- This allows the application to list, monitor, and manage other containers on the same Docker host
+- Make sure the user running the container has permission to access the Docker socket
+
+## Deployment Worker Containers
+
+The application specifically looks for containers with names containing "deployment-worker". Make sure your deployment worker containers are named appropriately:
+
+```bash
+# Example of running deployment worker containers
+docker run -d --name deployment-worker-1 your-worker-image
+docker run -d --name deployment-worker-2 your-worker-image
+docker run -d --name some-deployment-worker your-worker-image
+```
+
+## Debug Information
+
+The application will output debug information during startup showing:
+
+- Docker environment variables
+- Connection status to Docker daemon
+- All found containers
+- Filtered deployment-worker containers
+
 ## API Endpoints
 
 All endpoints are prefixed with `/api/v1`.
