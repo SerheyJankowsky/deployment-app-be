@@ -249,7 +249,15 @@ cleanup() {
 # Мониторинг контейнеров
 monitor() {
     log_info "Статус контейнеров:"
-    docker ps --filter "name=${CONTAINER_NAME_PREFIX}" --format "table {{.Names}}\t{{.Status}}\t{{.CPU}}\t{{.MemUsage}}"
+    docker ps --filter "name=${CONTAINER_NAME_PREFIX}" --format "table {{.Names}}\t{{.Status}}\t{{.CreatedAt}}\t{{.Ports}}"
+    
+    # Показываем статистику ресурсов, если есть запущенные контейнеры
+    local running_count=$(docker ps --filter "name=${CONTAINER_NAME_PREFIX}" -q | wc -l)
+    if [ $running_count -gt 0 ]; then
+        echo ""
+        log_info "Использование ресурсов контейнерами (первые 5 секунд):"
+        timeout 5s docker stats --filter "name=${CONTAINER_NAME_PREFIX}" --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}" 2>/dev/null || true
+    fi
     
     echo ""
     log_info "Использование ресурсов системы:"
