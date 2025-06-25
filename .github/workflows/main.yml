@@ -67,12 +67,12 @@ jobs:
       - name: Copy opensh-container files to server
         run: |
           echo "Copying opensh-container directory to server..."
-          sshpass -p "${{ secrets.HOST_PASSWORD }}" scp -o StrictHostKeyChecking=no -r ./opensh-container ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }}:~/
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no -r ./opensh-container ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/
 
       - name: Deploy containers on server
         run: |
-          echo "Starting container deployment on ${{ secrets.HOST }}..."
-          sshpass -p "${{ secrets.HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_USERNAME }}@${{ secrets.HOST }} "
+          echo "Starting container deployment on ${{ secrets.SSH_HOST }}..."
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd ~/opensh-container &&
             chmod +x *.sh &&
             ./manage-containers.sh auto
