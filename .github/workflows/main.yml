@@ -44,7 +44,9 @@ jobs:
             echo "Removing existing container..."
             docker rm deployer || true
             echo "Running container..."
-            docker run -d --name deployer --env-file .env --network gateway_network --ip 172.30.0.20 ${{ secrets.DOCKER_USERNAME }}/deployer:latest
+            docker run -d --name deployer --env-file .env --network gateway_network --ip 172.30.0.20 \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              ${{ secrets.DOCKER_USERNAME }}/deployer:latest
             echo "check container status..."
             docker ps -a
             if [ "$(docker inspect -f '{{.State.Status}}' deployer)" = "exited" ]; then
