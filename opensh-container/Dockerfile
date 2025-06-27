@@ -8,6 +8,7 @@ RUN apk add --no-cache \
     wget \
     git \
     openssh-client \
+    sshpass \
     rsync \
     docker-cli \
     python3 \
