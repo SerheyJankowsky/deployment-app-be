@@ -1,6 +1,9 @@
 package libs
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type SSHRuner struct{}
 
@@ -49,17 +52,31 @@ func (r *SSHRuner) CreateScriptRunner(confing *SSHRunerConfig) (string, error) {
 	return command, nil
 }
 
+// escapeShellArg properly escapes shell arguments for safe execution
+func (r *SSHRuner) escapeShellArg(arg string) string {
+	// Use single quotes and escape any single quotes within the argument
+	escaped := strings.ReplaceAll(arg, "'", "'\"'\"'")
+	return "'" + escaped + "'"
+}
+
 func (r *SSHRuner) createCommand(confing *SSHRunerConfig, command string) string {
+	// Escape password and command to prevent shell injection
+	escapedPassword := r.escapeShellArg(confing.Password)
+	escapedCommand := r.escapeShellArg(command)
+
 	if confing.SSHKey != nil {
-		return fmt.Sprintf("sshpass -p %s ssh -o StrictHostKeyChecking=no -i %s %s@%s %s", confing.Password, confing.SSHKey, confing.User, confing.IP, command)
+		escapedSSHKey := r.escapeShellArg(*confing.SSHKey)
+		return fmt.Sprintf("sshpass -p %s ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -i %s %s@%s %s",
+			escapedPassword, escapedSSHKey, confing.User, confing.IP, escapedCommand)
 	}
-	return fmt.Sprintf("sshpass -p %s ssh -o StrictHostKeyChecking=no %s@%s %s", confing.Password, confing.User, confing.IP, command)
+	return fmt.Sprintf("sshpass -p %s ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 %s@%s %s",
+		escapedPassword, confing.User, confing.IP, escapedCommand)
 }
 
 func (r *SSHRuner) loginDockerCommand(confing *SSHRunerConfig) string {
 	command := ""
 	if confing.DockerUser != nil && confing.DockerPassword != nil {
-		command += fmt.Sprintf("docker login -u %s -p %s", confing.DockerUser, confing.DockerPassword)
+		command += fmt.Sprintf("docker login -u %s -p %s", *confing.DockerUser, *confing.DockerPassword)
 	}
 	execCommand := r.createCommand(confing, command)
 	return execCommand
@@ -68,7 +85,7 @@ func (r *SSHRuner) loginDockerCommand(confing *SSHRunerConfig) string {
 func (r *SSHRuner) pullDockerCommand(confing *SSHRunerConfig) string {
 	command := ""
 	if confing.DockerImage != nil && confing.DockerRegistry != nil && confing.DockerTag != nil {
-		command += fmt.Sprintf("docker pull %s/%s:%s", confing.DockerRegistry, confing.DockerImage, confing.DockerTag)
+		command += fmt.Sprintf("docker pull %s/%s:%s", *confing.DockerRegistry, *confing.DockerImage, *confing.DockerTag)
 	}
 	execCommand := r.createCommand(confing, command)
 	return execCommand
@@ -81,7 +98,8 @@ func (r *SSHRuner) runDockerCommand(confing *SSHRunerConfig) string {
 		envCommand = r.createEnvContainerCommand(confing)
 	}
 	if confing.DockerImage != nil && confing.DockerRegistry != nil && confing.DockerTag != nil {
-		command += fmt.Sprintf("docker run -d --name %s %s --network gateway_network --ip 172.30.0.20 %s/%s:%s", confing.DockerContainerName, envCommand, confing.DockerRegistry, confing.DockerImage, confing.DockerTag)
+		command += fmt.Sprintf("docker run -d --name %s %s --network gateway_network --ip 172.30.0.20 %s/%s:%s",
+			*confing.DockerContainerName, envCommand, *confing.DockerRegistry, *confing.DockerImage, *confing.DockerTag)
 	}
 	execCommand := r.createCommand(confing, command)
 	return execCommand
@@ -91,7 +109,8 @@ func (r *SSHRuner) createEnvContainerCommand(confing *SSHRunerConfig) string {
 	command := ""
 	if confing.Env != nil {
 		for key, value := range *confing.Env {
-			command += fmt.Sprintf("-e %s=%s ", key, value)
+			escapedValue := r.escapeShellArg(value)
+			command += fmt.Sprintf("-e %s=%s ", key, escapedValue)
 		}
 	}
 	return command
@@ -101,7 +120,8 @@ func (r *SSHRuner) loadEnvToScript(confing *SSHRunerConfig) string {
 	command := ""
 	if confing.Env != nil {
 		for key, value := range *confing.Env {
-			command += fmt.Sprintf("export %s=%s\n", key, value)
+			escapedValue := r.escapeShellArg(value)
+			command += fmt.Sprintf("export %s=%s\n", key, escapedValue)
 		}
 	}
 	return command
