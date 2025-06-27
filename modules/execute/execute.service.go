@@ -88,17 +88,19 @@ func (s *ExecuteService) RunScript(id, userId, serverId, envId uint, iv string, 
 		return fmt.Errorf("failed to create script runner: %w", err)
 	}
 
-	// Log the execution details for debugging (without sensitive data)
+	// Log the execution details for debugging
 	fmt.Printf("DEBUG: Executing script on server %s@%s using worker %s\n",
 		server.Username, server.Host, worker.ID)
+	fmt.Printf("DEBUG: Generated SSH command: %s\n", command)
 
 	go func() {
 		// Test SSH connectivity first
 		testCommand := "echo 'SSH connection test successful'"
-		testSSHCommand := fmt.Sprintf("sshpass -p '%s' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 %s@%s %s",
+		testSSHCommand := fmt.Sprintf("sshpass -p %s ssh -o StrictHostKeyChecking=no %s@%s %s",
 			server.Password, server.Username, server.Host, testCommand)
 
 		fmt.Printf("DEBUG: Testing SSH connectivity to %s@%s...\n", server.Username, server.Host)
+		fmt.Printf("DEBUG: Test command: %s\n", testSSHCommand)
 		testResult, testErr := s.Docker.ExecuteCommand(context.Background(), worker.ID, testSSHCommand)
 		if testErr != nil {
 			fmt.Printf("ERROR: SSH connectivity test failed: %v\n", testErr)
@@ -114,6 +116,7 @@ func (s *ExecuteService) RunScript(id, userId, serverId, envId uint, iv string, 
 
 		// Execute the actual script
 		fmt.Printf("DEBUG: Executing actual script...\n")
+		fmt.Printf("DEBUG: Script content: %s\n", script.Script)
 		rs, err := s.Docker.ExecuteCommand(context.Background(), worker.ID, command)
 		if err != nil {
 			fmt.Printf("ERROR: Failed to execute command in container: %v\n", err)
