@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"strings"
 	"time"
 
 	"deployer.com/libs"
@@ -121,4 +122,16 @@ func (s *SecretsService) DeleteSecret(id, userId uint) error {
 		return err
 	}
 	return nil
+}
+
+func (s *SecretsService) GetEnvMap(secret SecretResponse) map[string]string {
+	envMap := make(map[string]string)
+	lines := strings.Split(secret.Content, "\n")
+	for _, line := range lines {
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+	return envMap
 }

@@ -319,10 +319,10 @@ func (dc *DockerComunication) GetContainerStats(ctx context.Context, containerID
 	}, nil
 }
 
-// ExecuteCommand выполняет команду в контейнере
-func (dc *DockerComunication) ExecuteCommand(ctx context.Context, containerID string, cmd []string) (string, error) {
+// ExecuteCommand выполняет команду в контейнере через bash
+func (dc *DockerComunication) ExecuteCommand(ctx context.Context, containerID string, cmd string) (string, error) {
 	execConfig := container.ExecOptions{
-		Cmd:          cmd,
+		Cmd:          []string{"bash", "-c", cmd},
 		AttachStdout: true,
 		AttachStderr: true,
 	}

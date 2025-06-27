@@ -11,6 +11,7 @@ import (
 	"deployer.com/modules/containers"
 	"deployer.com/modules/deployments"
 	"deployer.com/modules/domains"
+	"deployer.com/modules/execute"
 	"deployer.com/modules/projects"
 	"deployer.com/modules/scripts"
 	"deployer.com/modules/secrets"
@@ -114,6 +115,21 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB, docker *libs.DockerComunication
 		group := api.Group("/projects")
 		routes := projects.NewProjectsController(&group, projects.NewProjectsService(db))
 		routes.RegisterRoutes(&group)
+	}
+	{
+		group := api.Group("/execute")
+		routes := execute.NewExecuteController(
+			&group,
+			execute.NewExecuteService(scripts.NewScriptsService(db),
+				servers.NewServersService(db),
+				secrets.NewSecretsService(db),
+				containers.NewContainersService(db),
+				deployments.NewDeploymentsService(db),
+				projects.NewProjectsService(db),
+				docker,
+			),
+		)
+		routes.RegisterExecuteRoutes(&group)
 	}
 }
 
