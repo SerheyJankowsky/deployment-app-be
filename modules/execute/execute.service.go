@@ -71,11 +71,12 @@ func (s *ExecuteService) RunScript(id, userId, serverId, envId uint, iv string, 
 	}
 
 	config := libs.SSHRunerConfig{
-		IP:       server.Host,
-		User:     server.Username,
-		Password: server.Password,
-		Script:   script.Script,
-		Env:      &envMap,
+		IP:                 server.Host,
+		User:               server.Username,
+		Password:           server.Password,
+		Script:             script.Script,
+		Env:                &envMap,
+		SetSecretsToScript: &loadEnv,
 	}
 
 	worker := s.getWorker()
